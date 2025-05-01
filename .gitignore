@@ -2,6 +2,9 @@
 
 # dependencies
 node_modules/
+.expo/
+.expo-shared/
+.env
 
 # Expo
 .expo/
