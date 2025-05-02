@@ -1,20 +1,21 @@
-# Welcome to your Expo app 👋
+# Earth Beat - Walk for the World 🌎
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+![Logo](./assets/images/earth-beat-logo.png)
 
-## Get started
+We aim to help the world become a better place by providing a platform for the community members to help each other out while taking themed walks!
 
-1. Install dependencies
+## Helpful Libraries / Extensions
 
-   ```bash
-   npm install
-   ```
+1. Styled-Components
+- [📄 Docs & Examples](https://styled-components.com/)
 
-2. Start the app
+2. React Native Reanimated
+- [📄 Docs & Examples](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started)
 
-   ```bash
-   npx expo start
-   ```
+3. React Navigation
+- [📄 Docs & Examples](https://reactnavigation.org/docs/getting-started)
+
+## README 꾸미기 to be continued...
 
 In the output, you'll find options to open the app in a
 
