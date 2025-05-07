@@ -38,8 +38,6 @@ export default function HomeScreen() {
     router.push("/map");
   };
 
-  console.log(trailData);
-
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -77,7 +75,7 @@ export default function HomeScreen() {
           );
         })}
       </FlexContainer>
-      <GlobalButton title="start walking" onPress={() => generateWalkTrail()} />
+      <GlobalButton text="start walking" onPress={() => generateWalkTrail()} />
     </ParallaxScrollView>
   );
 }
