@@ -3,16 +3,23 @@ import {
   Animated,
   Dimensions,
   PanResponder,
+  Pressable,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
+import { colors } from "../constants/colors";
+import { ThemedText } from "./ThemedText";
 
 interface BottomSheetModalProps {
   isVisible: boolean;
   onClose: () => void;
   children: React.ReactNode;
   height?: number;
+  isHeader?: boolean;
+  headerTitle?: string;
+  isCancelButton?: boolean;
+  onPressAction?: () => void;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -23,6 +30,10 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
   onClose,
   children,
   height = DEFAULT_HEIGHT,
+  isHeader,
+  headerTitle,
+  isCancelButton,
+  onPressAction,
 }) => {
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const panResponder = useRef(
@@ -96,7 +107,37 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
         {...panResponder.panHandlers}
       >
         <View style={styles.handle} />
-        {children}
+        {isCancelButton && (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 15,
+            }}
+          >
+            <Pressable onPress={closeModal}>
+              <ThemedText style={{ fontSize: 20, color: colors.red.main }}>
+                Cancel
+              </ThemedText>
+            </Pressable>
+            {isHeader && (
+              <>
+                <ThemedText
+                  type="semiBold"
+                  style={{ fontSize: 20, color: colors.green.main }}
+                >
+                  {headerTitle}
+                </ThemedText>
+                <Pressable onPress={onPressAction}>
+                  <ThemedText style={{ fontSize: 20, color: colors.text.gray }}>
+                    Request
+                  </ThemedText>
+                </Pressable>
+              </>
+            )}
+          </View>
+        )}
+        <View style={styles.children}>{children}</View>
       </Animated.View>
     </View>
   );
@@ -106,6 +147,7 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end",
+    gap: 15,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -124,6 +166,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: "center",
     marginBottom: 16,
+  },
+  children: {
+    gap: 15,
   },
 });
 

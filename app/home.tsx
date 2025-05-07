@@ -8,6 +8,7 @@ import styled from "styled-components/native";
 import GlobalButton from "@/components/GlobalButton";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import BottomSheetModal from "../components/BottomSheetModal";
+import ModalSection from "../components/ModalSection";
 import Selector from "../components/Selector";
 import ThemeCard from "../components/themeCard";
 
@@ -22,6 +23,7 @@ import distanceData from "../constants/distanceData";
 import MainHelpIcon from "../assets/icons/main-help.png";
 import LogoImage from "../assets/images/logo-earth.png";
 import LogoText from "../assets/images/logo-text.png";
+import GlobalInput from "../components/GlobalInput";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -97,6 +99,7 @@ export default function HomeScreen() {
           </ThemedText>
           <FlexContainer
             horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               gap: 5,
             }}
@@ -147,11 +150,33 @@ export default function HomeScreen() {
       <BottomSheetModal
         isVisible={isVisible}
         onClose={() => setIsVisible(false)}
-        height={600}
+        height={800}
+        isCancelButton
+        isHeader
+        headerTitle="Help Signal"
       >
-        <View>
-          <ThemedText>Your modal content</ThemedText>
-        </View>
+        <ModalSection>
+          <GlobalInput placeholder="Title (i.e. Please water my plant!)" />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingLeft: 10,
+              paddingRight: 10,
+            }}
+          >
+            <ThemedText style={{ color: colors.darkGray.main }}>
+              Categories
+            </ThemedText>
+          </View>
+        </ModalSection>
+        <ModalSection>
+          <GlobalInput placeholder="Street Address" />
+          <GlobalInput placeholder="Apartment, Suite, etc." />
+          <GlobalInput placeholder="City" />
+          <GlobalInput placeholder="Postal Code" />
+        </ModalSection>
       </BottomSheetModal>
 
       {!isVisible && (
