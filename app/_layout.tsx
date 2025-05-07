@@ -1,13 +1,14 @@
 import {
   Poppins_400Regular,
-  Poppins_700Bold,
   Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_300Light,
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
 import { PaperProvider } from "react-native-paper";
+import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 
@@ -18,6 +19,7 @@ export default function RootLayout() {
     Poppins_400Regular,
     Poppins_700Bold,
     Poppins_600SemiBold,
+    Poppins_300Light,
   });
 
   if (!fontsLoaded) return null;
@@ -28,6 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="nickname" options={{ headerShown: false }} />
+        <Stack.Screen name="map" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

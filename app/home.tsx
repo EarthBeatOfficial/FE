@@ -1,24 +1,32 @@
 import { useRouter } from "expo-router";
+import moment from "moment";
 import { useState } from "react";
-import { Text } from "react-native";
-import styled from "styled-components";
+import { Image, View } from "react-native";
+import styled from "styled-components/native";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
-import { ThemedView } from "@/components/ThemedView";
+import BottomSheetModal from "../components/BottomSheetModal";
 import Selector from "../components/Selector";
 import ThemeCard from "../components/themeCard";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
+import NameCard from "../components/NameCard";
+import { ThemedText } from "../components/ThemedText";
+import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
-import Typography from "../constants/typography";
+
+// icons / images
+import MainHelpIcon from "../assets/icons/main-help.png";
+import LogoImage from "../assets/images/logo-earth.png";
+import LogoText from "../assets/images/logo-text.png";
 
 export default function HomeScreen() {
   const router = useRouter();
   const [trailData, setTrailData] = useState({
-    distance: 0,
+    distance: null,
     theme: {
       id: null,
       title: "",
@@ -26,6 +34,7 @@ export default function HomeScreen() {
       color: {},
     },
   });
+  const [isVisible, setIsVisible] = useState(false);
 
   const handleSetTrailData = (key: string, value: any) => {
     setTrailData({
@@ -38,52 +47,166 @@ export default function HomeScreen() {
     router.push("/map");
   };
 
+  // set dummy data for now
+  const name = "gahee";
+  const numResponds = 8;
+
+  const today = moment().format("MMMM Do");
+  const day = moment().format("dddd");
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-    >
-      <ThemedView>
-        <Text style={Typography.h1}>Home page</Text>
-      </ThemedView>
-      <FlexContainer>
-        {distanceData.map((data, key) => {
-          return (
-            <Selector
-              data={data}
-              key={key}
-              selected={trailData?.distance === data.distance}
-              onClick={(distance: any) =>
-                // router.push({ pathname: "/map", params: distance })
-                //   params 안 쓸 것 같지만 혹시 몰라서 놔두는 코드
-                handleSetTrailData("distance", distance)
-              }
+    <Container>
+      <ScrollViewContainer>
+        <ParallaxScrollView>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Image
+              source={LogoImage}
+              style={{ width: 45, height: 56, resizeMode: "contain" }}
             />
-          );
-        })}
-      </FlexContainer>
-      <FlexContainer>
-        {walkThemes.map((theme, key) => {
-          return (
-            <ThemeCard
-              theme={theme}
-              key={key}
-              selected={trailData?.theme?.id === theme.id}
-              onClick={() => {
-                handleSetTrailData("theme", theme);
+            <Image
+              source={LogoText}
+              style={{ width: 186, height: 22, resizeMode: "contain" }}
+            />
+          </View>
+          <NameCard name={name} numResponds={numResponds} />
+          <ThemedText style={{ marginBottom: -10 }}>
+            Walking Distance
+          </ThemedText>
+          <FlexContainer
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: 5,
+            }}
+          >
+            {distanceData.map((data, key) => {
+              return (
+                <Selector
+                  data={data}
+                  key={key}
+                  selected={trailData?.distance === data.distance}
+                  onPress={(distance: any) =>
+                    handleSetTrailData("distance", distance)
+                  }
+                />
+              );
+            })}
+          </FlexContainer>
+          <ThemedText style={{ marginBottom: -10 }}>
+            Walking Trail Themes
+          </ThemedText>
+          <FlexContainer
+            horizontal
+            contentContainerStyle={{
+              gap: 5,
+            }}
+          >
+            {walkThemes.map((theme, key) => {
+              return (
+                <ThemeCard
+                  disabled={!trailData?.distance}
+                  theme={theme}
+                  key={key}
+                  selected={trailData?.theme?.id === theme.id}
+                  onClick={() => {
+                    handleSetTrailData("theme", theme);
+                  }}
+                />
+              );
+            })}
+          </FlexContainer>
+          <GlobalButton
+            text="Start Walking"
+            onPress={() => generateWalkTrail()}
+            disabled={!trailData?.distance || !trailData?.theme.id}
+          />
+          <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+            <ThemedText style={{ fontSize: 25, color: colors.green.main }}>
+              Today, {today}
+            </ThemedText>
+            <ThemedText type="light" style={{ color: colors.text.gray }}>
+              {day}
+            </ThemedText>
+          </View>
+          <ListContainer>
+            <ThemedText
+              style={{
+                color: colors.green.main,
+                textAlign: "center",
+                fontSize: 20,
               }}
+            >
+              There are no walks / signals
+              <br />
+              to display for today.
+            </ThemedText>
+          </ListContainer>
+        </ParallaxScrollView>
+      </ScrollViewContainer>
+
+      <BottomSheetModal
+        isVisible={isVisible}
+        onClose={() => setIsVisible(false)}
+        height={600}
+      >
+        <View>
+          <ThemedText>Your modal content</ThemedText>
+        </View>
+      </BottomSheetModal>
+
+      {!isVisible && (
+        <ButtonBox>
+          <HelpButton onPress={() => setIsVisible(true)}>
+            <Image
+              source={MainHelpIcon}
+              style={{ width: 76, height: 76, resizeMode: "contain" }}
             />
-          );
-        })}
-      </FlexContainer>
-      <GlobalButton text="start walking" onPress={() => generateWalkTrail()} />
-    </ParallaxScrollView>
+          </HelpButton>
+        </ButtonBox>
+      )}
+    </Container>
   );
 }
 
-const FlexContainer = styled.div`
+const Container = styled.View`
+  flex: 1;
+  height: 100%;
+`;
+
+const ScrollViewContainer = styled.View`
+  flex: 1;
+  height: 100%;
+`;
+
+const FlexContainer = styled.ScrollView`
+  flex-direction: row;
+  background-color: #fff;
+  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.06));
+  padding: 12px 15px;
+  border-radius: 10px;
+`;
+
+const ButtonBox = styled.View`
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  z-index: 1000;
+`;
+
+const HelpButton = styled.Pressable`
+  background-color: ${colors.green.main};
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
   display: flex;
   align-items: center;
-  & > * {
-    margin-right: 5px;
-  }
+  justify-content: center;
+  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.25));
+`;
+
+const ListContainer = styled.View`
+  background-color: #fff;
+  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.06));
+  padding: 15px;
+  border-radius: 10px;
 `;

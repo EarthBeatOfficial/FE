@@ -1,5 +1,5 @@
 import { Text } from "react-native";
-import styled from "styled-components";
+import styled from "styled-components/native";
 
 // constants
 import { colors } from "../constants/colors";
@@ -10,10 +10,10 @@ interface SelecterProps {
 
 const Selector = (props: any) => {
   const { distance, time } = props.data;
-  const { selected, onClick } = props;
+  const { selected, onPress } = props;
 
   return (
-    <Container onClick={() => onClick(distance)} selected={selected}>
+    <Container onPress={() => onPress(distance)} selected={selected}>
       <Text
         style={{
           fontSize: 12,
@@ -29,9 +29,9 @@ const Selector = (props: any) => {
 
 export default Selector;
 
-const Container = styled.div<SelecterProps>`
+const Container = styled.Pressable<SelecterProps>`
   border: 2px solid
-    ${(props) => (props.selected ? colors.green.main : colors.border)};
+    ${(props: any) => (props.selected ? colors.green.main : colors.border)};
   border-radius: 30px;
   max-height: 30px;
   padding: 5px;
@@ -41,5 +41,5 @@ const Container = styled.div<SelecterProps>`
   justify-content: center;
   white-space: nowrap;
   max-width: 160px;
-  background-color: ${(props) => props.selected && colors.green.light};
+  background-color: ${(props: any) => props.selected && colors.green.light};
 `;
