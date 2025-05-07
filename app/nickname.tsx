@@ -1,12 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, TextInput, View } from "react-native";
+import { Image, View } from "react-native";
 
 // comps / icons
 import GlobalButton from "@/components/GlobalButton";
 import { ThemedText } from "@/components/ThemedText";
 import logo from "../assets/images/earth-beat-logo.png";
+import GlobalInput from "../components/GlobalInput";
 import { colors } from "../constants/colors";
 
 export default function NicknameScreen() {
@@ -40,7 +41,7 @@ export default function NicknameScreen() {
     <LinearGradient
       colors={["#D3F36B", "#FFF"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 0, y: 0.3 }}
       style={{
         height: "100%",
         display: "flex",
@@ -51,7 +52,7 @@ export default function NicknameScreen() {
         width: "100%",
       }}
     >
-      <View>
+      <View style={{ gap: 15 }}>
         <Image
           source={logo}
           style={{
@@ -87,11 +88,11 @@ export default function NicknameScreen() {
             Please provide a unique nickname
           </ThemedText>
         )}
-        <TextInput
-          style={{ borderWidth: 1, padding: 8, marginVertical: 10 }}
+        <GlobalInput
           value={nickname}
           onChangeText={setNickname}
           placeholder="Nickname"
+          isError={errorState}
         />
         <GlobalButton
           text="Get Started"

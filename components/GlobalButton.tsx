@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "react-native-paper";
 
 import { colors } from "../constants/colors";
@@ -23,6 +24,7 @@ const GlobalButton = (props: any) => {
           justifyContent: "center",
           width: icon && size && `${size}px`,
           height: icon && size && `${size}px`,
+          padding: 0,
         }}
       >
         {text}

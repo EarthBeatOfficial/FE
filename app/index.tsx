@@ -4,6 +4,7 @@ import { Image } from "react-native";
 
 // comps / icons
 import GlobalButton from "@/components/GlobalButton";
+import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import logo from "../assets/images/earth-beat-logo.png";
@@ -23,6 +24,7 @@ export default function LandingScreen() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        gap: 20,
       }}
     >
       <Image
