@@ -56,6 +56,8 @@ export default function HomeScreen() {
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
 
+  //   console.log(!trailData?.distance);
+
   return (
     <Container>
       <ScrollViewContainer>
@@ -107,11 +109,11 @@ export default function HomeScreen() {
             {walkThemes.map((theme, key) => {
               return (
                 <ThemeCard
-                  disabled={!trailData?.distance}
+                  disabled={trailData?.distance === null}
                   theme={theme}
                   key={key}
                   selected={trailData?.theme?.id === theme.id}
-                  onClick={() => {
+                  onPress={() => {
                     handleSetTrailData("theme", theme);
                   }}
                 />
@@ -121,7 +123,7 @@ export default function HomeScreen() {
           <GlobalButton
             text="Start Walking"
             onPress={() => generateWalkTrail()}
-            disabled={!trailData?.distance || !trailData?.theme.id}
+            disabled={trailData?.distance === null || !trailData?.theme.id}
           />
           <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
             <ThemedText style={{ fontSize: 25, color: colors.green.main }}>
