@@ -1,10 +1,11 @@
 import React from "react";
+import { Image } from "react-native";
 import { Button } from "react-native-paper";
 
 import { colors } from "../constants/colors";
 
 const GlobalButton = (props: any) => {
-  const { text, disabled, icon, size } = props;
+  const { text, disabled, icon, size, iconSource } = props;
 
   return (
     <>
@@ -13,7 +14,7 @@ const GlobalButton = (props: any) => {
         mode="contained"
         labelStyle={{ fontFamily: "Poppins_700Bold", fontSize: 18 }}
         style={{
-          borderRadius: icon ? "50%" : 10,
+          borderRadius: iconSource ? "50%" : 10,
           backgroundColor: disabled
             ? "rgba(95, 95, 99, 0.3)"
             : colors.green.main,
@@ -22,12 +23,16 @@ const GlobalButton = (props: any) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: icon && size && `${size}px`,
-          height: icon && size && `${size}px`,
+          width: iconSource && size && `${size}px`,
+          height: iconSource && size && `${size}px`,
           padding: 0,
         }}
       >
-        {text}
+        {iconSource ? (
+          <Image source={iconSource} style={{ width: 24, height: 24 }} />
+        ) : (
+          text
+        )}
       </Button>
     </>
   );

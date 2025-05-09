@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { Image } from "react-native";
 
 // comps / icons
+import ArrowLeft from "@/assets/icons/arrow-left.png";
 import GlobalButton from "@/components/GlobalButton";
 import { ThemedText } from "@/components/ThemedText";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import logo from "../assets/images/earth-beat-logo.png";
 import { colors } from "../constants/colors";
 
@@ -16,7 +16,7 @@ export default function LandingScreen() {
     <LinearGradient
       colors={["#D3F36B", "#FFF"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 5, y: 5 }}
+      end={{ x: 125, y: 125 }}
       style={{
         height: "100%",
         display: "flex",
@@ -46,7 +46,7 @@ export default function LandingScreen() {
         walks!
       </ThemedText>
       <GlobalButton
-        icon={() => <AntDesign name="arrowright" size={24} color="white" />}
+        iconSource={ArrowLeft}
         size={65}
         onPress={() => router.push("/nickname")}
       />
