@@ -13,6 +13,7 @@ interface ThemeCardProps {
     emoji: string;
     color: { main: string; light: string };
   };
+  key: number;
 }
 
 interface ContainerProps {
@@ -65,5 +66,5 @@ const Container = styled.View<ContainerProps>`
   border: ${(props: ContainerProps) =>
     props.selected ? `2px solid ${props.color.main}` : "none"};
   border-radius: 28px;
-  opacity: ${(props: ContainerProps) => (props.disabled ? 0.5 : 1)};
+  /* opacity: ${(props: ContainerProps) => (props.disabled ? 0.5 : 1)}; */
 `;

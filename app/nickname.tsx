@@ -52,7 +52,7 @@ export default function NicknameScreen() {
         width: "100%",
       }}
     >
-      <View style={{ gap: 15 }}>
+      <View style={{ gap: 20 }}>
         <Image
           source={logo}
           style={{

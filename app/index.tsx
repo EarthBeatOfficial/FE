@@ -4,7 +4,6 @@ import { Image } from "react-native";
 
 // comps / icons
 import GlobalButton from "@/components/GlobalButton";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import logo from "../assets/images/earth-beat-logo.png";
@@ -17,14 +16,14 @@ export default function LandingScreen() {
     <LinearGradient
       colors={["#D3F36B", "#FFF"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      end={{ x: 5, y: 5 }}
       style={{
         height: "100%",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 20,
+        gap: 30,
       }}
     >
       <Image
@@ -35,7 +34,12 @@ export default function LandingScreen() {
         Walk for the World
       </ThemedText>
       <ThemedText
-        style={{ width: 365, textAlign: "center", color: colors.text.gray }}
+        style={{
+          width: 365,
+          textAlign: "center",
+          color: colors.text.gray,
+          fontSize: 18,
+        }}
       >
         We aim to help the world become a better place by providing a platform
         for the community members to help each other out while taking themed
