@@ -27,7 +27,6 @@ import distanceData from "../constants/distanceData";
 import signalTypes from "../constants/signalTypes";
 
 // icons / images
-import InfoIcon from "@/assets/icons/info.png";
 import MainHelpIcon from "@/assets/icons/main-help.png";
 import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
@@ -53,8 +52,6 @@ export default function HomeScreen() {
   });
   const [responseData, setResponseData] = useState({ message: "", title: "" });
   const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  // hard coded for now
   const [showSuccessModal, setShowSuccessModal] = useState(true);
   const [signalData, setSignalData] = useState({
     categoryId: null,
@@ -67,7 +64,7 @@ export default function HomeScreen() {
     timeLimit: 10, // default 10 minutes
   });
   const [testData, setTestData] = useState();
-
+  const [isPanEnabled, setIsPanEnabled] = useState(true);
   const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
 
   const handleSignalData = (value: any, key: string) => {
@@ -161,13 +158,15 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchWalkLongData = async () => {
-      try {
-        const numWalkLogs = await getWalkLogNum(userData?.userId);
-        setNumResponds(numWalkLogs);
-        const walkLogs = await getWalkLogs(userData?.userId);
-        setWalkLogs(walkLogs);
-      } catch (error) {
-        console.error("Error fetching walk long data:", error);
+      if (userData && userData?.userId) {
+        try {
+          const numWalkLogs = await getWalkLogNum(userData?.userId);
+          setNumResponds(numWalkLogs);
+          const walkLogs = await getWalkLogs(userData?.userId);
+          setWalkLogs(walkLogs);
+        } catch (error) {
+          console.error("Error fetching walk log data:", error);
+        }
       }
     };
     fetchWalkLongData();
@@ -268,6 +267,7 @@ export default function HomeScreen() {
         isCancelButton
         isHeader
         headerTitle="Help Signal"
+        isPanEnabled={isPanEnabled}
       >
         <ModalSection>
           <GlobalInput
@@ -286,9 +286,7 @@ export default function HomeScreen() {
             <ThemedText style={{ color: colors.darkGray.main }}>
               Categories
             </ThemedText>
-            <Pressable onPress={() => setShowTooltip((state) => !state)}>
-              <Image source={InfoIcon} style={{ width: 20, height: 20 }} />
-            </Pressable>
+            <InfoTooltip onOpen={() => setIsPanEnabled((state) => !state)} />
           </View>
           <View
             style={{
@@ -331,6 +329,7 @@ export default function HomeScreen() {
             <TimePicker
               onTimeSelect={handleTimeSelect}
               initialTime={signalData.timeLimit}
+              onOpen={() => setIsPanEnabled((state) => !state)}
             />
           </View>
         </ModalSection>
@@ -354,12 +353,6 @@ export default function HomeScreen() {
           />
         </ModalSection>
       </BottomSheetModal>
-      {showAddSignal && (
-        <InfoTooltip
-          isVisible={showTooltip}
-          onClose={() => setShowTooltip(false)}
-        />
-      )}
 
       {/* ------------- Add Signal Button -------------- */}
       {!showAddSignal && !showSuccessModal && (
@@ -380,23 +373,31 @@ export default function HomeScreen() {
       <BottomSheetModal
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
-        height={440}
+        height={550}
         isButton
       >
         <View
           style={{ alignItems: "center", justifyContent: "center", gap: 15 }}
         >
           <Image source={SuccessIcon} style={{ width: 200, height: 200 }} />
-          <ThemedText style={{ textAlign: "center" }}>
+          <ThemedText style={{ textAlign: "center", fontSize: 16 }}>
             A helpful responder{"\n"}
             just completed your signal
           </ThemedText>
-          <ThemedText type="bold" style={{ color: colors.green.main }}>
+          <ThemedText
+            type="semiBold"
+            style={{ color: colors.green.main, fontSize: 25 }}
+          >
             {responseData?.title}
           </ThemedText>
           <View style={styles.messageBox}>
-            <ThemedText>Message from responder:</ThemedText>
-            <ThemedText></ThemedText>
+            <ThemedText style={styles.message}>
+              Message from responder:
+            </ThemedText>
+            <ThemedText style={styles.message}>
+              {responseData?.message}
+              hello
+            </ThemedText>
           </View>
         </View>
       </BottomSheetModal>
@@ -488,5 +489,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     flexDirection: "column",
+    width: "100%",
+    padding: 15,
+  },
+  message: {
+    color: colors.darkGray.main,
+    fontSize: 16,
   },
 });

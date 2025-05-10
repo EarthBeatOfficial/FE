@@ -112,6 +112,7 @@ export default function NicknameScreen() {
                 style={{
                   textAlign: "center",
                   color: colors.red.main,
+                  fontSize: 18,
                 }}
               >
                 This nickname already exists.
@@ -123,6 +124,7 @@ export default function NicknameScreen() {
                 style={{
                   textAlign: "center",
                   color: colors.text.gray,
+                  fontSize: 18,
                 }}
               >
                 Please provide a unique nickname

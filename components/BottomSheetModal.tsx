@@ -22,6 +22,7 @@ interface BottomSheetModalProps {
   isCancelButton?: boolean;
   onPressAction?: () => void;
   isButton?: boolean;
+  isPanEnabled?: boolean;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -37,12 +38,13 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
   isCancelButton,
   onPressAction,
   isButton = false,
+  isPanEnabled = true,
 }) => {
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => isPanEnabled,
+      onMoveShouldSetPanResponder: () => isPanEnabled,
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dy > 0) {
           translateY.setValue(gestureState.dy);
@@ -112,7 +114,7 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
             transform: [{ translateY }],
           },
         ]}
-        {...panResponder.panHandlers}
+        {...(isPanEnabled ? panResponder.panHandlers : {})}
       >
         <View style={styles.handle} />
         {isCancelButton && (
