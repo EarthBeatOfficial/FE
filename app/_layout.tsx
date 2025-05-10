@@ -1,8 +1,8 @@
 import {
+  Poppins_300Light,
   Poppins_400Regular,
   Poppins_600SemiBold,
   Poppins_700Bold,
-  Poppins_300Light,
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { Stack } from "expo-router";
@@ -30,7 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="nickname" options={{ headerShown: false }} />
-        <Stack.Screen name="map" />
+        <Stack.Screen name="map" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

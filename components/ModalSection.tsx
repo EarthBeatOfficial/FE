@@ -1,9 +1,8 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { colors } from "../constants/colors";
 
 interface ModalSectionProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   style?: any;
 }
 
