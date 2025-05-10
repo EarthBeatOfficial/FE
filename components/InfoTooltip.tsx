@@ -27,7 +27,7 @@ const InfoTooltip = ({ isVisible, onClose }: InfoToolTipProps) => {
         shadowOpacity: 0.06,
         shadowRadius: 20,
         position: "absolute",
-        top: 250,
+        top: 230,
         left: 80,
         gap: 10,
       }}

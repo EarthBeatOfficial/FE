@@ -28,6 +28,7 @@ const GlobalButton: React.FC<GlobalButtonProps> = ({
       mode="contained"
       onPress={onPress}
       labelStyle={styles.label}
+      disabled={disabled}
       style={[
         styles.button,
         iconSource && styles.iconButton,
