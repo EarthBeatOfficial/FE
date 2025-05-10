@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import { Image, Pressable, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import styled from "styled-components/native";
 
 // comps
@@ -32,26 +32,26 @@ import MainHelpIcon from "@/assets/icons/main-help.png";
 import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
 import SuccessIcon from "@/assets/images/success-hands.png";
-import { useRoute } from "@react-navigation/native";
+
+// API
+import { recommendRoute } from "@/api/routesApi";
+import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 export default function HomeScreen() {
-  const route = useRoute();
-  const userId = route.params;
   const router = useRouter();
   const [userData, setUserData] = useState<{
     userId: number;
     nickname: string;
   } | null>(null);
+  const [numResponds, setNumResponds] = useState(0);
+  const [walkLogs, setWalkLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [trailData, setTrailData] = useState({
     distance: null,
-    theme: {
-      id: null,
-      title: "",
-      emoji: "",
-      color: {},
-    },
+    themeId: null,
+    location: { lat: "", long: "" },
   });
+  const [responseData, setResponseData] = useState({ message: "", title: "" });
   const [showAddSignal, setShowAddSignal] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   // hard coded for now
@@ -66,6 +66,7 @@ export default function HomeScreen() {
     postalCode: "",
     timeLimit: 10, // default 10 minutes
   });
+  const [testData, setTestData] = useState();
 
   const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
 
@@ -102,12 +103,38 @@ export default function HomeScreen() {
     }
   };
 
-  const generateWalkTrail = () => {
-    router.push("/map");
+  const generateWalkTrail = async () => {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      //   setTrailData({
+      //     ...trailData,
+      //     location: {
+      //       lat: JSON.stringify(latitude),
+      //       long: JSON.stringify(longitude),
+      //     },
+      //   });
+      if (latitude && longitude) {
+        try {
+          const resp = await recommendRoute({
+            userId: userData?.userId,
+            location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+            themeId: trailData?.themeId,
+            distance: trailData?.distance,
+          });
+          setTestData(resp);
+          // router.push("/map");
+        } catch (error: any) {
+          console.log("Error generating a route recommendation", error);
+        }
+      }
+    });
+    if (trailData?.location) {
+    } else {
+      // ADD could not generate UI
+    }
   };
 
   // set dummy data for now, preferrably store these values in 1 object
-  const numResponds = 8;
   const walkLog = [];
 
   const today = moment().format("MMMM Do");
@@ -132,6 +159,20 @@ export default function HomeScreen() {
     fetchUserData();
   }, []);
 
+  useEffect(() => {
+    const fetchWalkLongData = async () => {
+      try {
+        const numWalkLogs = await getWalkLogNum(userData?.userId);
+        setNumResponds(numWalkLogs);
+        const walkLogs = await getWalkLogs(userData?.userId);
+        setWalkLogs(walkLogs);
+      } catch (error) {
+        console.error("Error fetching walk long data:", error);
+      }
+    };
+    fetchWalkLongData();
+  }, [userData]);
+
   return (
     <Container>
       <ScrollViewContainer>
@@ -150,12 +191,13 @@ export default function HomeScreen() {
           <ThemedText style={{ marginBottom: -10 }}>
             Walking Distance
           </ThemedText>
-          <FlexContainer
+          <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               gap: 5,
             }}
+            style={styles.flexContainer}
           >
             {distanceData.map((data, key) => {
               return (
@@ -169,16 +211,17 @@ export default function HomeScreen() {
                 />
               );
             })}
-          </FlexContainer>
+          </ScrollView>
           <ThemedText style={{ marginBottom: -10 }}>
             Walking Trail Themes
           </ThemedText>
-          <FlexContainer
+          <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               gap: 5,
             }}
+            style={styles.flexContainer}
           >
             {walkThemes.map((theme, key) => {
               return (
@@ -186,19 +229,20 @@ export default function HomeScreen() {
                   disabled={trailData?.distance === null}
                   theme={theme}
                   key={key}
-                  selected={trailData?.theme?.id === theme.id}
+                  selected={trailData?.themeId === theme.id}
                   onPress={() => {
-                    handleSetTrailData("theme", theme);
+                    handleSetTrailData("themeId", theme.id);
                   }}
                 />
               );
             })}
-          </FlexContainer>
+          </ScrollView>
           <GlobalButton
             text="Start Walking"
             onPress={() => generateWalkTrail()}
-            disabled={trailData?.distance === null || !trailData?.theme.id}
+            disabled={trailData?.distance === null || !trailData?.themeId}
           />
+          <ThemedText>{testData}</ThemedText>
           {walkLog?.length !== 0 && (
             <>
               <View
@@ -211,7 +255,7 @@ export default function HomeScreen() {
                   {day}
                 </ThemedText>
               </View>
-              <ListContainer></ListContainer>
+              <View style={styles.listContainer}></View>
             </>
           )}
         </ParallaxScrollView>
@@ -269,7 +313,7 @@ export default function HomeScreen() {
           <GlobalInput
             placeholder="Description"
             multiline
-            numberOfLines={2}
+            numberOfLines={3}
             onChangeText={(value) => handleSignalData(value, "desc")}
           />
           <View
@@ -320,12 +364,15 @@ export default function HomeScreen() {
       {/* ------------- Add Signal Button -------------- */}
       {!showAddSignal && !showSuccessModal && (
         <ButtonBox>
-          <HelpButton onPress={() => setShowAddSignal(true)}>
+          <Pressable
+            onPress={() => setShowAddSignal(true)}
+            style={styles.helpButton}
+          >
             <Image
               source={MainHelpIcon}
               style={{ width: 56, height: 56, resizeMode: "contain" }}
             />
-          </HelpButton>
+          </Pressable>
         </ButtonBox>
       )}
 
@@ -344,6 +391,13 @@ export default function HomeScreen() {
             A helpful responder{"\n"}
             just completed your signal
           </ThemedText>
+          <ThemedText type="bold" style={{ color: colors.green.main }}>
+            {responseData?.title}
+          </ThemedText>
+          <View style={styles.messageBox}>
+            <ThemedText>Message from responder:</ThemedText>
+            <ThemedText></ThemedText>
+          </View>
         </View>
       </BottomSheetModal>
 
@@ -371,14 +425,6 @@ const ScrollViewContainer = styled.View`
   height: 100%;
 `;
 
-const FlexContainer = styled.ScrollView`
-  flex-direction: row;
-  background-color: #fff;
-  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.06));
-  padding: 12px 15px;
-  border-radius: 10px;
-`;
-
 const ButtonBox = styled.View`
   position: absolute;
   bottom: 15px;
@@ -386,20 +432,61 @@ const ButtonBox = styled.View`
   z-index: 1000;
 `;
 
-const HelpButton = styled.Pressable`
-  background-color: ${colors.green.main};
-  border-radius: 50%;
-  width: 65px;
-  height: 65px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.25));
-`;
-
-const ListContainer = styled.View`
-  background-color: #fff;
-  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.06));
-  padding: 15px;
-  border-radius: 10px;
-`;
+const styles = StyleSheet.create({
+  flexContainer: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  listContainer: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+  },
+  helpButton: {
+    backgroundColor: colors.green.main,
+    borderRadius: "50%",
+    width: 65,
+    height: 65,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+  },
+  messageBox: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    flexDirection: "column",
+  },
+});
