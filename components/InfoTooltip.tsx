@@ -16,23 +16,31 @@ import { ThemedText } from "./ThemedText";
 // icons
 import InfoIcon from "@/assets/icons/info.png";
 
-interface InfoToolTipProps {
-  isVisible?: boolean;
-  onClose: () => void;
+interface InfoTooltipProps {
+  onOpen: () => void;
 }
 
-const InfoTooltip = ({ isVisible, onClose }: InfoToolTipProps) => {
+const InfoTooltip = ({ onOpen }: InfoTooltipProps) => {
   const [show, setShow] = useState(false);
-
-  //   if (!isVisible) return null;
 
   return (
     <>
-      <Pressable onPress={() => setShow(true)}>
+      <Pressable
+        onPress={() => {
+          setShow(true);
+          onOpen();
+        }}
+      >
         <Image source={InfoIcon} style={{ width: 20, height: 20 }} />
       </Pressable>
       <Modal visible={show} transparent animationType="slide">
-        <TouchableOpacity style={styles.overlay} onPress={() => setShow(false)}>
+        <TouchableOpacity
+          style={styles.overlay}
+          onPress={() => {
+            setShow(false);
+            onOpen();
+          }}
+        >
           <View
             style={{
               backgroundColor: "#fff",
@@ -92,7 +100,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    // backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "flex-end",
   },
 });
