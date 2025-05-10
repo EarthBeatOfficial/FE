@@ -9,17 +9,19 @@ import {
   View,
 } from "react-native";
 import { colors } from "../constants/colors";
+import GlobalButton from "./GlobalButton";
 import { ThemedText } from "./ThemedText";
 
 interface BottomSheetModalProps {
   isVisible: boolean;
   onClose: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   height?: number;
   isHeader?: boolean;
   headerTitle?: string;
   isCancelButton?: boolean;
   onPressAction?: () => void;
+  isButton?: boolean;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -34,6 +36,7 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
   headerTitle,
   isCancelButton,
   onPressAction,
+  isButton = false,
 }) => {
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const panResponder = useRef(
@@ -87,6 +90,11 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     }).start();
   };
 
+  const handleBottomButton = () => {
+    if (onPressAction) onPressAction();
+    closeModal();
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -137,7 +145,12 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
             )}
           </View>
         )}
-        <View style={styles.children}>{children}</View>
+        <View style={styles.children}>
+          <>{children}</>
+          {isButton && (
+            <GlobalButton text="Got it" onPress={handleBottomButton} />
+          )}
+        </View>
       </Animated.View>
     </View>
   );
