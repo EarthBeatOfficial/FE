@@ -17,7 +17,7 @@ const InfoTooltip = ({ isVisible, onClose }: InfoToolTipProps) => {
       style={{
         backgroundColor: "#fff",
         padding: 15,
-        width: 290,
+        width: 280,
         borderRadius: 10,
         shadowColor: "#000",
         shadowOffset: {
@@ -27,14 +27,17 @@ const InfoTooltip = ({ isVisible, onClose }: InfoToolTipProps) => {
         shadowOpacity: 0.06,
         shadowRadius: 20,
         position: "absolute",
-        top: 325,
-        left: 110,
+        top: 250,
+        left: 80,
         gap: 10,
       }}
     >
       {signalTypes.map((signal, key) => {
         return (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View
+            key={key}
+            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+          >
             <SignalIcon {...signal} size={40} imgSize={30} disabled key={key} />
             <ThemedText style={{ fontSize: 14 }}>{signal.title}</ThemedText>
           </View>

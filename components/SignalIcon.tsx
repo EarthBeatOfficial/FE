@@ -17,7 +17,7 @@ interface SignalIconProps {
 const SignalIcon: React.FC<SignalIconProps> = ({
   image,
   color,
-  size = 60, // default size
+  size = 56, // default size
   disabled,
   onPress,
   imgSize,
