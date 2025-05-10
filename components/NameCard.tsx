@@ -1,5 +1,4 @@
-import { Image } from "react-native";
-import styled from "styled-components/native";
+import { Image, StyleSheet, View } from "react-native";
 
 import UserImage from "../assets/images/user-head.png";
 import { colors } from "../constants/colors";
@@ -9,8 +8,8 @@ const NameCard = (props: any) => {
   const { name, numResponds } = props;
   return (
     <>
-      <Container>
-        <FlexBox>
+      <View style={styles.container}>
+        <View style={styles.flexBox}>
           <Image
             source={UserImage}
             style={{
@@ -23,8 +22,8 @@ const NameCard = (props: any) => {
           <ThemedText style={{ textTransform: "uppercase", fontSize: 30 }}>
             {name}
           </ThemedText>
-        </FlexBox>
-        <FlexBox>
+        </View>
+        <View style={styles.flexBox}>
           <ThemedText
             type="bold"
             style={{ fontSize: 25, color: colors.green.main, marginRight: 5 }}
@@ -32,25 +31,33 @@ const NameCard = (props: any) => {
             {numResponds}
           </ThemedText>
           <ThemedText style={{ fontSize: 20 }}>responds</ThemedText>
-        </FlexBox>
-      </Container>
+        </View>
+      </View>
     </>
   );
 };
 
 export default NameCard;
 
-const Container = styled.View`
-  background-color: #fff;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  filter: drop-shadow(0px 4px 20px rgba(0, 0, 0, 0.06));
-  padding: 12px 15px;
-  border-radius: 10px;
-`;
-
-const FlexBox = styled.View`
-  flex-direction: row;
-  align-items: center;
-`;
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  flexBox: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+});
