@@ -1,7 +1,14 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Image, View } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  View,
+} from "react-native";
 
 // comps / icons
 import GlobalButton from "@/components/GlobalButton";
@@ -10,96 +17,137 @@ import logo from "../assets/images/earth-beat-logo.png";
 import GlobalInput from "../components/GlobalInput";
 import { colors } from "../constants/colors";
 
+// API
+import { createUser } from "@/api/userApi";
+
 export default function NicknameScreen() {
   const [nickname, setNickname] = useState("");
-  const [duplicate, setDuplicate] = useState(false);
   const [errorState, setErrorState] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
-  const isDuplicate = (name: string) =>
-    ["alice", "bob"].includes(name.toLowerCase());
+  const handleContinue = async () => {
+    if (!nickname.trim()) return;
 
-  useEffect(() => {
-    if (nickname) {
-      setDuplicate(isDuplicate(nickname));
-      if (errorState) {
-        setErrorState((state) => !state);
+    setIsLoading(true);
+    setErrorState(false);
+
+    try {
+      const response = await createUser({ username: nickname });
+      // Store user data in AsyncStorage
+      await AsyncStorage.setItem(
+        "userData",
+        JSON.stringify({
+          userId: response.id,
+          nickname: response.username,
+        })
+      );
+      // Navigate to home screen
+      router.push("/home");
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        // Handle duplicate nickname error
+        setErrorState(true);
+      } else {
+        // Handle other errors
+        console.error("Error creating user:", error);
       }
-    }
-  }, [nickname]);
-
-  const handleContinue = () => {
-    if (duplicate) {
-      setErrorState(true);
-    } else {
-      router.replace("/home");
-      setErrorState(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <LinearGradient
-      colors={["#D3F36B", "#FFF"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 0.3 }}
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        flex: 1,
-        width: "100%",
-      }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
-      <View style={{ gap: 20 }}>
-        <Image
-          source={logo}
-          style={{
-            width: 315,
-            height: 400,
-            resizeMode: "contain",
-            alignSelf: "center",
+      {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
+      <LinearGradient
+        colors={["#D3F36B", "#FFF"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.8 }}
+        style={{
+          flex: 1,
+          width: "100%",
+        }}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingVertical: 20,
           }}
-        />
-        <ThemedText type="bold" style={{ fontSize: 25, textAlign: "center" }}>
-          What should we call you?
-        </ThemedText>
-        {errorState ? (
-          <ThemedText
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View
             style={{
-              width: 365,
-              textAlign: "center",
-              color: colors.red.main,
+              gap: 20,
+              width: "100%",
+              maxWidth: 400,
+              paddingHorizontal: 20,
             }}
           >
-            This nickname already exists.
-            <br />
-            Please enter a unique nickname
-          </ThemedText>
-        ) : (
-          <ThemedText
-            style={{
-              width: 365,
-              textAlign: "center",
-              color: colors.text.gray,
-            }}
-          >
-            Please provide a unique nickname
-          </ThemedText>
-        )}
-        <GlobalInput
-          value={nickname}
-          onChangeText={setNickname}
-          placeholder="Nickname"
-          isError={errorState}
-        />
-        <GlobalButton
-          text="Get Started"
-          onPress={() => handleContinue()}
-          disabled={!nickname || errorState}
-        />
-      </View>
-    </LinearGradient>
+            <Image
+              source={logo}
+              style={{
+                width: 315,
+                height: 400,
+                resizeMode: "contain",
+                alignSelf: "center",
+              }}
+            />
+            <ThemedText
+              type="bold"
+              style={{ fontSize: 25, textAlign: "center" }}
+            >
+              What should we call you?
+            </ThemedText>
+            {errorState ? (
+              <ThemedText
+                style={{
+                  textAlign: "center",
+                  color: colors.red.main,
+                }}
+              >
+                This nickname already exists.
+                {"\n"}
+                Please enter a unique nickname
+              </ThemedText>
+            ) : (
+              <ThemedText
+                style={{
+                  textAlign: "center",
+                  color: colors.text.gray,
+                }}
+              >
+                Please provide a unique nickname
+              </ThemedText>
+            )}
+            <GlobalInput
+              value={nickname}
+              onChangeText={(text) => {
+                setNickname(text);
+                if (errorState) setErrorState(false);
+              }}
+              placeholder="Nickname"
+              isError={errorState}
+              multiline={false}
+              numberOfLines={1}
+            />
+            <GlobalButton
+              text="Get Started"
+              onPress={handleContinue}
+              disabled={!nickname.trim() || errorState || isLoading}
+            />
+          </View>
+        </ScrollView>
+      </LinearGradient>
+      {/* </TouchableWithoutFeedback> */}
+    </KeyboardAvoidingView>
   );
 }

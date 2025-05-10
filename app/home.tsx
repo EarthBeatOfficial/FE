@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -31,10 +32,17 @@ import MainHelpIcon from "@/assets/icons/main-help.png";
 import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
 import SuccessIcon from "@/assets/images/success-hands.png";
+import { useRoute } from "@react-navigation/native";
 
 export default function HomeScreen() {
+  const route = useRoute();
+  const userId = route.params;
   const router = useRouter();
-  //   const [user, setUser] = useState();
+  const [userData, setUserData] = useState<{
+    userId: number;
+    nickname: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [trailData, setTrailData] = useState({
     distance: null,
     theme: {
@@ -99,7 +107,6 @@ export default function HomeScreen() {
   };
 
   // set dummy data for now, preferrably store these values in 1 object
-  const name = "gahee";
   const numResponds = 8;
   const walkLog = [];
 
@@ -108,9 +115,21 @@ export default function HomeScreen() {
   const testTimeValue = new Date(1598051730000);
 
   useEffect(() => {
-    // AXIOS GET call to retrieve user data
-    // const getUserData = axios.get('....')
-    // setUser(getUserData);
+    const fetchUserData = async () => {
+      try {
+        const storedData = await AsyncStorage.getItem("userData");
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          setUserData(parsedData);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   return (
@@ -127,7 +146,7 @@ export default function HomeScreen() {
               style={{ width: 186, height: 22, resizeMode: "contain" }}
             />
           </View>
-          <NameCard name={name} numResponds={numResponds} />
+          <NameCard name={userData?.nickname} numResponds={numResponds} />
           <ThemedText style={{ marginBottom: -10 }}>
             Walking Distance
           </ThemedText>
@@ -250,7 +269,7 @@ export default function HomeScreen() {
           <GlobalInput
             placeholder="Description"
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
             onChangeText={(value) => handleSignalData(value, "desc")}
           />
           <View
@@ -274,6 +293,7 @@ export default function HomeScreen() {
         <ModalSection>
           <GlobalInput
             placeholder="Street Address"
+            // autocomplete
             onChangeText={(value) => handleSignalData(value, "streetAddress")}
           />
           <GlobalInput
@@ -303,7 +323,7 @@ export default function HomeScreen() {
           <HelpButton onPress={() => setShowAddSignal(true)}>
             <Image
               source={MainHelpIcon}
-              style={{ width: 76, height: 76, resizeMode: "contain" }}
+              style={{ width: 56, height: 56, resizeMode: "contain" }}
             />
           </HelpButton>
         </ButtonBox>
@@ -369,8 +389,8 @@ const ButtonBox = styled.View`
 const HelpButton = styled.Pressable`
   background-color: ${colors.green.main};
   border-radius: 50%;
-  width: 90px;
-  height: 90px;
+  width: 65px;
+  height: 65px;
   display: flex;
   align-items: center;
   justify-content: center;

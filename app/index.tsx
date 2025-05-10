@@ -14,9 +14,9 @@ export default function LandingScreen() {
 
   return (
     <LinearGradient
-      colors={["#D3F36B", "#FFF"]}
+      colors={["#D3F36B", "#fff"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 125, y: 125 }}
+      end={{ x: 1, y: 0.8 }}
       style={{
         height: "100%",
         display: "flex",
@@ -28,14 +28,14 @@ export default function LandingScreen() {
     >
       <Image
         source={logo}
-        style={{ width: 315, height: 400, resizeMode: "contain" }}
+        style={{ width: 280, height: 355, resizeMode: "contain" }}
       />
       <ThemedText type="bold" style={{ fontSize: 25 }}>
         Walk for the World
       </ThemedText>
       <ThemedText
         style={{
-          width: 365,
+          width: 300,
           textAlign: "center",
           color: colors.text.gray,
           fontSize: 18,
