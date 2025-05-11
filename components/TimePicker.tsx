@@ -1,5 +1,5 @@
 import { Picker } from "@react-native-picker/picker";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 
 // nested comps
@@ -77,7 +77,7 @@ const TimePicker: React.FC<TimePickerProps> = ({
                     key={h}
                     label={`${h}h`}
                     value={h}
-                    style={styles.pickerItem}
+                    style={{ flex: 1, color: colors.darkGray.main }}
                   />
                 ))}
               </Picker>
@@ -142,16 +142,6 @@ const styles = StyleSheet.create({
   picker: {
     flex: 1,
     color: colors.darkGray.main,
-  },
-  confirmButton: {
-    marginTop: 20,
-    alignSelf: "center",
-    padding: 10,
-    backgroundColor: "#eee",
-    borderRadius: 10,
-  },
-  confirmText: {
-    fontWeight: "bold",
   },
   pickerItem: {
     color: colors.darkGray.main,
