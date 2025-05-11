@@ -42,16 +42,16 @@ import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
 import SuccessIcon from "@/assets/images/success-hands.png";
 
-// API
-import { recommendRoute } from "@/api/routesApi";
+// API / redux
 import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
+import { setRecommendedRoute } from "@/redux/routeSlice";
+import { useDispatch } from "react-redux";
+import { recommendRoute } from "../api/routesApi";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
-  );
+  const dispatch = useDispatch();
   const [userData, setUserData] = useState<{
     userId: number;
     nickname: string;
@@ -151,7 +151,7 @@ export default function HomeScreen() {
         ...signalData,
         userId: userData?.userId,
       });
-      // save response to redux?
+      // store in redux?
       console.log(response);
 
       // Set the start time when the signal is created
@@ -172,8 +172,7 @@ export default function HomeScreen() {
         themeId: trailData?.themeId,
         distance: trailData?.distance,
       });
-      setRoute(resp);
-      // store route << into redux
+      dispatch(setRecommendedRoute(resp));
       router.push("/map");
     } catch (error: any) {
       console.log("Error generating a route recommendation", error);
