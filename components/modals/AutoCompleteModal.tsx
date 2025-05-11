@@ -12,8 +12,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { colors } from "../constants/colors";
-import { ThemedText } from "./ThemedText";
+import { colors } from "../../constants/colors";
+import { ThemedText } from "../ThemedText";
 
 interface AutoCompleteModalProps {
   fetchSuggestions: (input: string) => void;
