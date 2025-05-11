@@ -7,9 +7,10 @@ import {
 } from "@expo-google-fonts/poppins";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance } from "react-native";
-import { Provider as PaperProvider, DefaultTheme } from "react-native-paper";
+import { DefaultTheme, Provider as PaperProvider } from "react-native-paper";
 import "react-native-reanimated";
+import { Provider } from "react-redux";
+import { store } from "../redux/store";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 
@@ -37,15 +38,17 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <PaperProvider theme={lightTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="home" options={{ headerShown: false }} />
-        <Stack.Screen name="nickname" options={{ headerShown: false }} />
-        <Stack.Screen name="map" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </PaperProvider>
+    <Provider store={store}>
+      <PaperProvider theme={lightTheme}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="home" options={{ headerShown: false }} />
+          <Stack.Screen name="nickname" options={{ headerShown: false }} />
+          <Stack.Screen name="map" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </PaperProvider>
+    </Provider>
   );
 }
