@@ -1,36 +1,71 @@
 import React from "react";
+import { Image, Platform, StyleSheet } from "react-native";
 import { Button } from "react-native-paper";
 
 import { colors } from "../constants/colors";
 
-const GlobalButton = (props: any) => {
-  const { text, disabled, icon, size } = props;
+interface GlobalButtonProps {
+  text?: string;
+  disabled?: boolean;
+  icon?: any;
+  size?: number;
+  iconSource?: any;
+  onPress?: () => void;
+}
 
+const GlobalButton: React.FC<GlobalButtonProps> = ({
+  text,
+  disabled,
+  icon,
+  size,
+  iconSource,
+  onPress,
+  ...props
+}) => {
   return (
-    <>
-      <Button
-        {...props}
-        mode="contained"
-        labelStyle={{ fontFamily: "Poppins_700Bold", fontSize: 18 }}
-        style={{
-          borderRadius: icon ? "50%" : 10,
-          backgroundColor: disabled
-            ? "rgba(95, 95, 99, 0.3)"
-            : colors.green.main,
-          color: disabled ? colors.darkGray.main : "#fff",
-          minHeight: "50px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: icon && size && `${size}px`,
-          height: icon && size && `${size}px`,
-          padding: 0,
-        }}
-      >
-        {text}
-      </Button>
-    </>
+    <Button
+      {...props}
+      mode="contained"
+      onPress={onPress}
+      labelStyle={styles.label}
+      disabled={disabled}
+      style={[
+        styles.button,
+        iconSource && styles.iconButton,
+        iconSource && size && { width: size, height: size },
+        disabled && styles.disabled,
+      ]}
+    >
+      {iconSource ? <Image source={iconSource} style={styles.icon} /> : text}
+    </Button>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    borderRadius: 10,
+    backgroundColor: colors.green.main,
+    minHeight: Platform.OS === "web" ? 48 : 56,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+  },
+  iconButton: {
+    borderRadius: 50,
+  },
+  disabled: {
+    backgroundColor: "rgba(95, 95, 99, 0.3)",
+  },
+  label: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 18,
+    color: "#fff",
+  },
+  icon: {
+    width: 24,
+    height: 24,
+  },
+});
 
 export default GlobalButton;
