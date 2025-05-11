@@ -11,6 +11,7 @@ interface GlobalButtonProps {
   size?: number;
   iconSource?: any;
   onPress?: () => void;
+  color?: string;
 }
 
 const GlobalButton: React.FC<GlobalButtonProps> = ({
@@ -20,6 +21,7 @@ const GlobalButton: React.FC<GlobalButtonProps> = ({
   size,
   iconSource,
   onPress,
+  color,
   ...props
 }) => {
   return (
@@ -34,6 +36,7 @@ const GlobalButton: React.FC<GlobalButtonProps> = ({
         iconSource && styles.iconButton,
         iconSource && size && { width: size, height: size },
         disabled && styles.disabled,
+        color && { backgroundColor: color },
       ]}
     >
       {iconSource ? <Image source={iconSource} style={styles.icon} /> : text}
