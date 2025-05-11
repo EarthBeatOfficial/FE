@@ -1,13 +1,23 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 import React, { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Image,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 import styled from "styled-components/native";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
+import AutoCompleteModal from "../components/AutoCompleteModal";
 import BottomSheetModal from "../components/BottomSheetModal";
 import CountdownTimer from "../components/CountdownTimer";
 import GlobalInput from "../components/GlobalInput";
@@ -27,7 +37,6 @@ import distanceData from "../constants/distanceData";
 import signalTypes from "../constants/signalTypes";
 
 // icons / images
-import InfoIcon from "@/assets/icons/info.png";
 import MainHelpIcon from "@/assets/icons/main-help.png";
 import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
@@ -35,10 +44,14 @@ import SuccessIcon from "@/assets/images/success-hands.png";
 
 // API
 import { recommendRoute } from "@/api/routesApi";
+import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
   const [userData, setUserData] = useState<{
     userId: number;
     nickname: string;
@@ -49,32 +62,76 @@ export default function HomeScreen() {
   const [trailData, setTrailData] = useState({
     distance: null,
     themeId: null,
-    location: { lat: "", long: "" },
+    location: "",
   });
   const [responseData, setResponseData] = useState({ message: "", title: "" });
   const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  // hard coded for now
   const [showSuccessModal, setShowSuccessModal] = useState(true);
   const [signalData, setSignalData] = useState({
-    categoryId: null,
     title: "",
-    desc: "",
-    streetAddress: "",
-    aptAddress: "",
-    city: "",
-    postalCode: "",
+    description: "",
+    lat: null,
+    lng: null,
     timeLimit: 10, // default 10 minutes
+    categoryId: null,
   });
-  const [testData, setTestData] = useState();
-
+  const [route, setRoute] = useState();
+  const [isPanEnabled, setIsPanEnabled] = useState(true);
   const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
+  const [placeSuggestions, setPlaceSuggestions] = useState([]);
 
-  const handleSignalData = (value: any, key: string) => {
-    setSignalData({
-      ...signalData,
-      [key]: value,
-    });
+  const GOOOGLE_API_KEY = "AIzaSyAFdSqMPFP89HZa_bKh4v6GveO_TY4x4VI";
+
+  const fetchPlaceSuggestions = async (input: string) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${GOOOGLE_API_KEY}&language=en`
+      );
+      const json = await response.json();
+      setPlaceSuggestions(json.predictions);
+    } catch (err) {
+      console.error("Error fetching Google Places:", err);
+    }
+  };
+
+  const handleSignalData = async (value: any, key: string) => {
+    if (key === "location") {
+      setSignalData({
+        ...signalData,
+        lat: value.lat,
+        lng: value.lng,
+      });
+      //   try {
+      //     const response = await fetch(
+      //       `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${value}&key=${GOOOGLE_API_KEY}&language=en`
+      //     );
+      //     const json = await response.json();
+      //     setPlaceSuggestions(json.predictions);
+      //   } catch (err) {
+      //     console.error("Error fetching Google Places:", err);
+      //   }
+    } else {
+      setSignalData({
+        ...signalData,
+        [key]: value,
+      });
+    }
+  };
+
+  console.log("signal", signalData);
+
+  const handleSelect = async (placeId: string) => {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOOGLE_API_KEY}`
+    );
+    const json = await res.json();
+    if (json.result.geometry.location) {
+      setSignalData({
+        ...signalData,
+        lat: json.result.geometry.location.lat,
+        lng: json.result.geometry.location.lng,
+      });
+    }
   };
 
   const handleSetTrailData = (key: string, value: any) => {
@@ -90,8 +147,12 @@ export default function HomeScreen() {
 
   const handleSignalSubmit = async () => {
     try {
-      // Your POST request here
-      // const response = await axios.post('/api/signals', signalData);
+      const response = await createSignal({
+        ...signalData,
+        userId: userData?.userId,
+      });
+      // save response to redux?
+      console.log(response);
 
       // Set the start time when the signal is created
       setSignalStartTime(new Date());
@@ -104,45 +165,31 @@ export default function HomeScreen() {
   };
 
   const generateWalkTrail = async () => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-      //   setTrailData({
-      //     ...trailData,
-      //     location: {
-      //       lat: JSON.stringify(latitude),
-      //       long: JSON.stringify(longitude),
-      //     },
-      //   });
-      if (latitude && longitude) {
-        try {
-          const resp = await recommendRoute({
-            userId: userData?.userId,
-            location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
-            themeId: trailData?.themeId,
-            distance: trailData?.distance,
-          });
-          setTestData(resp);
-          // router.push("/map");
-        } catch (error: any) {
-          console.log("Error generating a route recommendation", error);
-        }
-      }
-    });
+    try {
+      const resp = await recommendRoute({
+        userId: userData?.userId,
+        location: trailData?.location,
+        themeId: trailData?.themeId,
+        distance: trailData?.distance,
+      });
+      setRoute(resp);
+      // store route << into redux
+      router.push("/map");
+    } catch (error: any) {
+      console.log("Error generating a route recommendation", error);
+    }
+
     if (trailData?.location) {
     } else {
       // ADD could not generate UI
     }
   };
 
-  // set dummy data for now, preferrably store these values in 1 object
-  const walkLog = [];
-
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
-  const testTimeValue = new Date(1598051730000);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    async function fetchUserData() {
       try {
         const storedData = await AsyncStorage.getItem("userData");
         if (storedData) {
@@ -154,276 +201,305 @@ export default function HomeScreen() {
       } finally {
         setIsLoading(false);
       }
-    };
+    }
 
+    async function getCurrentLocation() {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      if (location) {
+        const { latitude, longitude } = location.coords;
+        setTrailData({
+          ...trailData,
+          location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+        });
+      }
+    }
+
+    getCurrentLocation();
     fetchUserData();
   }, []);
 
   useEffect(() => {
     const fetchWalkLongData = async () => {
-      try {
-        const numWalkLogs = await getWalkLogNum(userData?.userId);
-        setNumResponds(numWalkLogs);
-        const walkLogs = await getWalkLogs(userData?.userId);
-        setWalkLogs(walkLogs);
-      } catch (error) {
-        console.error("Error fetching walk long data:", error);
+      if (userData && userData?.userId) {
+        try {
+          const numWalkLogs = await getWalkLogNum(userData?.userId);
+          setNumResponds(numWalkLogs);
+          const walkLogs = await getWalkLogs(userData?.userId);
+          setWalkLogs(walkLogs);
+        } catch (error) {
+          console.error("Error fetching walk log data:", error);
+        }
       }
     };
     fetchWalkLongData();
   }, [userData]);
 
   return (
-    <Container>
-      <ScrollViewContainer>
-        <ParallaxScrollView>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Image
-              source={LogoImage}
-              style={{ width: 45, height: 56, resizeMode: "contain" }}
-            />
-            <Image
-              source={LogoText}
-              style={{ width: 186, height: 22, resizeMode: "contain" }}
-            />
-          </View>
-          <NameCard name={userData?.nickname} numResponds={numResponds} />
-          <ThemedText style={{ marginBottom: -10 }}>
-            Walking Distance
-          </ThemedText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              gap: 5,
-            }}
-            style={styles.flexContainer}
-          >
-            {distanceData.map((data, key) => {
-              return (
-                <Selector
-                  data={data}
-                  key={key}
-                  selected={trailData?.distance === data.distance}
-                  onPress={(distance: any) =>
-                    handleSetTrailData("distance", distance)
-                  }
-                />
-              );
-            })}
-          </ScrollView>
-          <ThemedText style={{ marginBottom: -10 }}>
-            Walking Trail Themes
-          </ThemedText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              gap: 5,
-            }}
-            style={styles.flexContainer}
-          >
-            {walkThemes.map((theme, key) => {
-              return (
-                <ThemeCard
-                  disabled={trailData?.distance === null}
-                  theme={theme}
-                  key={key}
-                  selected={trailData?.themeId === theme.id}
-                  onPress={() => {
-                    handleSetTrailData("themeId", theme.id);
-                  }}
-                />
-              );
-            })}
-          </ScrollView>
-          <GlobalButton
-            text="Start Walking"
-            onPress={() => generateWalkTrail()}
-            disabled={trailData?.distance === null || !trailData?.themeId}
-          />
-          <ThemedText>{testData}</ThemedText>
-          {walkLog?.length !== 0 && (
-            <>
-              <View
-                style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
-              >
-                <ThemedText style={{ fontSize: 25, color: colors.green.main }}>
-                  Today, {today}
-                </ThemedText>
-                <ThemedText type="light" style={{ color: colors.text.gray }}>
-                  {day}
-                </ThemedText>
-              </View>
-              <View style={styles.listContainer}></View>
-            </>
-          )}
-        </ParallaxScrollView>
-      </ScrollViewContainer>
-
-      <BottomSheetModal
-        isVisible={showAddSignal}
-        onClose={() => setShowAddSignal(false)}
-        height={830}
-        isCancelButton
-        isHeader
-        headerTitle="Help Signal"
-      >
-        <ModalSection>
-          <GlobalInput
-            placeholder="Title (i.e. Please water my plant!)"
-            onChangeText={(value) => handleSignalData(value, "title")}
-          />
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingLeft: 10,
-              paddingRight: 10,
-            }}
-          >
-            <ThemedText style={{ color: colors.darkGray.main }}>
-              Categories
+    // <KeyboardAvoidingView
+    //   behavior={Platform.OS === "ios" ? "padding" : "height"}
+    //   style={{ flex: 1 }}
+    //   keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0}
+    // >
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <View style={styles.container}>
+          <ParallaxScrollView>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <Image
+                source={LogoImage}
+                style={{ width: 45, height: 56, resizeMode: "contain" }}
+              />
+              <Image
+                source={LogoText}
+                style={{ width: 186, height: 22, resizeMode: "contain" }}
+              />
+            </View>
+            <NameCard name={userData?.nickname} numResponds={numResponds} />
+            <ThemedText style={{ marginBottom: -10 }}>
+              Walking Distance
             </ThemedText>
-            <Pressable onPress={() => setShowTooltip((state) => !state)}>
-              <Image source={InfoIcon} style={{ width: 20, height: 20 }} />
+            <View style={styles.flexContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  gap: 5,
+                }}
+              >
+                {distanceData.map((data, key) => {
+                  return (
+                    <Selector
+                      data={data}
+                      key={key}
+                      selected={trailData?.distance === data.distance}
+                      onPress={(distance: any) =>
+                        handleSetTrailData("distance", distance)
+                      }
+                    />
+                  );
+                })}
+              </ScrollView>
+            </View>
+            <ThemedText style={{ marginBottom: -10 }}>
+              Walking Trail Themes
+            </ThemedText>
+            <View style={styles.flexContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  gap: 5,
+                }}
+              >
+                {walkThemes.map((theme, key) => {
+                  return (
+                    <ThemeCard
+                      disabled={trailData?.distance === null}
+                      theme={theme}
+                      key={key}
+                      selected={trailData?.themeId === theme.id}
+                      onPress={() => {
+                        handleSetTrailData("themeId", theme.id);
+                      }}
+                    />
+                  );
+                })}
+              </ScrollView>
+            </View>
+            <GlobalButton
+              text="Start Walking"
+              onPress={() => generateWalkTrail()}
+              disabled={trailData?.distance === null || !trailData?.themeId}
+            />
+            {walkLogs?.length !== 0 && (
+              <>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <ThemedText
+                    style={{ fontSize: 25, color: colors.green.main }}
+                  >
+                    Today, {today}
+                  </ThemedText>
+                  <ThemedText type="light" style={{ color: colors.text.gray }}>
+                    {day}
+                  </ThemedText>
+                </View>
+                <View style={styles.listContainer}></View>
+              </>
+            )}
+          </ParallaxScrollView>
+        </View>
+
+        <BottomSheetModal
+          isVisible={showAddSignal}
+          onClose={() => setShowAddSignal(false)}
+          height={630}
+          isCancelButton
+          isHeader
+          headerTitle="Help Signal"
+          isPanEnabled={isPanEnabled}
+          onPressAction={handleSignalSubmit}
+          disabled={
+            !signalData.categoryId &&
+            !signalData.description &&
+            !signalData.lat &&
+            !signalData.lng &&
+            !signalData.timeLimit &&
+            !signalData.title
+          }
+        >
+          <ModalSection style={{ marginBottom: 16 }}>
+            <GlobalInput
+              placeholder="Title (i.e. Please water my plant!)"
+              onChangeText={(value) => handleSignalData(value, "title")}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingLeft: 10,
+                paddingRight: 10,
+              }}
+            >
+              <ThemedText style={{ color: colors.darkGray.main }}>
+                Categories
+              </ThemedText>
+              <InfoTooltip onOpen={() => setIsPanEnabled((state) => !state)} />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                flexWrap: "wrap",
+                gap: 10,
+              }}
+            >
+              {signalTypes.map((signal, key) => {
+                return (
+                  <SignalIcon
+                    signal={signal}
+                    key={key}
+                    selected={signalData?.categoryId === signal.id}
+                    onPress={() => handleSignalData(signal.id, "categoryId")}
+                  />
+                );
+              })}
+            </View>
+            <GlobalInput
+              placeholder="Description"
+              //   multiline
+              numberOfLines={3}
+              onChangeText={(value) => handleSignalData(value, "description")}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingLeft: 10,
+                paddingRight: 10,
+              }}
+            >
+              <ThemedText style={{ color: colors.darkGray.main }}>
+                Time Limit
+              </ThemedText>
+              <TimePicker
+                onTimeSelect={handleTimeSelect}
+                initialTime={signalData.timeLimit}
+                onOpen={() => setIsPanEnabled((state) => !state)}
+              />
+            </View>
+          </ModalSection>
+          <ModalSection style={{ marginBottom: 16 }}>
+            <AutoCompleteModal
+              fetchSuggestions={fetchPlaceSuggestions}
+              suggestions={placeSuggestions}
+              onSelect={(placeId) => handleSelect(placeId)}
+              //   onOpen={() => setIsPanEnabled((state) => !state)}
+            />
+          </ModalSection>
+        </BottomSheetModal>
+
+        {/* ------------- Add Signal Button -------------- */}
+        {!showAddSignal && !showSuccessModal && (
+          <ButtonBox>
+            <Pressable
+              onPress={() => setShowAddSignal(true)}
+              style={styles.helpButton}
+            >
+              <Image
+                source={MainHelpIcon}
+                style={{ width: 56, height: 56, resizeMode: "contain" }}
+              />
             </Pressable>
-          </View>
+          </ButtonBox>
+        )}
+
+        {/* ------------- Popup for when someone completes a signal -------------- */}
+        <BottomSheetModal
+          isVisible={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          height={550}
+          isButton
+        >
           <View
             style={{
-              flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              flexWrap: "wrap",
-              gap: 10,
+              gap: 15,
             }}
           >
-            {signalTypes.map((signal, key) => {
-              return (
-                <SignalIcon
-                  {...signal}
-                  key={key}
-                  selected={signalData?.categoryId === signal.id}
-                  onPress={() => handleSignalData(signal.id, "categoryId")}
-                />
-              );
-            })}
-          </View>
-          <GlobalInput
-            placeholder="Description"
-            multiline
-            numberOfLines={3}
-            onChangeText={(value) => handleSignalData(value, "desc")}
-          />
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingLeft: 10,
-              paddingRight: 10,
-            }}
-          >
-            <ThemedText style={{ color: colors.darkGray.main }}>
-              Time Limit
+            <Image source={SuccessIcon} style={{ width: 200, height: 200 }} />
+            <ThemedText style={{ textAlign: "center", fontSize: 16 }}>
+              A helpful responder{"\n"}
+              just completed your signal
             </ThemedText>
-            <TimePicker
-              onTimeSelect={handleTimeSelect}
-              initialTime={signalData.timeLimit}
-            />
+            <ThemedText
+              type="semiBold"
+              style={{ color: colors.green.main, fontSize: 25 }}
+            >
+              {responseData?.title}
+            </ThemedText>
+            <View style={styles.messageBox}>
+              <ThemedText style={styles.message}>
+                Message from responder:
+              </ThemedText>
+              <ThemedText style={styles.message}>
+                {responseData?.message}
+                hello
+              </ThemedText>
+            </View>
           </View>
-        </ModalSection>
-        <ModalSection>
-          <GlobalInput
-            placeholder="Street Address"
-            // autocomplete
-            onChangeText={(value) => handleSignalData(value, "streetAddress")}
-          />
-          <GlobalInput
-            placeholder="Apartment, Suite, etc."
-            onChangeText={(value) => handleSignalData(value, "aptAddress")}
-          />
-          <GlobalInput
-            placeholder="City"
-            onChangeText={(value) => handleSignalData(value, "city")}
-          />
-          <GlobalInput
-            placeholder="Postal Code"
-            onChangeText={(value) => handleSignalData(value, "postalCode")}
-          />
-        </ModalSection>
-      </BottomSheetModal>
-      {showAddSignal && (
-        <InfoTooltip
-          isVisible={showTooltip}
-          onClose={() => setShowTooltip(false)}
-        />
-      )}
+        </BottomSheetModal>
 
-      {/* ------------- Add Signal Button -------------- */}
-      {!showAddSignal && !showSuccessModal && (
-        <ButtonBox>
-          <Pressable
-            onPress={() => setShowAddSignal(true)}
-            style={styles.helpButton}
-          >
-            <Image
-              source={MainHelpIcon}
-              style={{ width: 56, height: 56, resizeMode: "contain" }}
-            />
-          </Pressable>
-        </ButtonBox>
-      )}
-
-      {/* ------------- Popup for when someone completes a signal -------------- */}
-      <BottomSheetModal
-        isVisible={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        height={440}
-        isButton
-      >
-        <View
-          style={{ alignItems: "center", justifyContent: "center", gap: 15 }}
-        >
-          <Image source={SuccessIcon} style={{ width: 200, height: 200 }} />
-          <ThemedText style={{ textAlign: "center" }}>
-            A helpful responder{"\n"}
-            just completed your signal
-          </ThemedText>
-          <ThemedText type="bold" style={{ color: colors.green.main }}>
-            {responseData?.title}
-          </ThemedText>
-          <View style={styles.messageBox}>
-            <ThemedText>Message from responder:</ThemedText>
-            <ThemedText></ThemedText>
-          </View>
-        </View>
-      </BottomSheetModal>
-
-      {signalStartTime && (
-        <CountdownTimer
-          timeLimit={signalData.timeLimit}
-          startTime={signalStartTime}
-          onTimeUp={() => {
-            // Handle when time is up
-            console.log("Time limit reached!");
-          }}
-        />
-      )}
-    </Container>
+        {signalStartTime && (
+          <CountdownTimer
+            timeLimit={signalData.timeLimit}
+            startTime={signalStartTime}
+            onTimeUp={() => {
+              // Handle when time is up
+              console.log("Time limit reached!");
+            }}
+          />
+        )}
+      </View>
+    </TouchableWithoutFeedback>
+    // </KeyboardAvoidingView>
   );
 }
-
-const Container = styled.View`
-  flex: 1;
-  height: 100%;
-`;
-
-const ScrollViewContainer = styled.View`
-  flex: 1;
-  height: 100%;
-`;
 
 const ButtonBox = styled.View`
   position: absolute;
@@ -433,6 +509,10 @@ const ButtonBox = styled.View`
 `;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    height: "100%",
+  },
   flexContainer: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -446,6 +526,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 10,
+    alignItems: "center",
+    gap: 5,
   },
   listContainer: {
     backgroundColor: "#fff",
@@ -488,5 +570,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     flexDirection: "column",
+    width: "100%",
+    padding: 15,
+  },
+  message: {
+    color: colors.darkGray.main,
+    fontSize: 16,
   },
 });

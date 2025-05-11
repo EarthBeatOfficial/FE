@@ -2,8 +2,11 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
   PanResponder,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -22,6 +25,8 @@ interface BottomSheetModalProps {
   isCancelButton?: boolean;
   onPressAction?: () => void;
   isButton?: boolean;
+  isPanEnabled?: boolean;
+  disabled?: boolean;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -37,12 +42,14 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
   isCancelButton,
   onPressAction,
   isButton = false,
+  isPanEnabled = true,
+  disabled = true,
 }) => {
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => isPanEnabled,
+      onMoveShouldSetPanResponder: () => isPanEnabled,
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dy > 0) {
           translateY.setValue(gestureState.dy);
@@ -112,45 +119,63 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
             transform: [{ translateY }],
           },
         ]}
-        {...panResponder.panHandlers}
+        {...(isPanEnabled ? panResponder.panHandlers : {})}
       >
-        <View style={styles.handle} />
-        {isCancelButton && (
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: 15,
-            }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 200 : 0}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1 }}
           >
-            <Pressable onPress={closeModal}>
-              <ThemedText style={{ fontSize: 20, color: colors.red.main }}>
-                Cancel
-              </ThemedText>
-            </Pressable>
-            {isHeader && (
-              <>
-                <ThemedText
-                  type="semiBold"
-                  style={{ fontSize: 20, color: colors.green.main }}
-                >
-                  {headerTitle}
-                </ThemedText>
-                <Pressable onPress={onPressAction}>
-                  <ThemedText style={{ fontSize: 20, color: colors.text.gray }}>
-                    Request
+            <View style={styles.handle} />
+            {isCancelButton && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 15,
+                }}
+              >
+                <Pressable onPress={closeModal}>
+                  <ThemedText style={{ fontSize: 20, color: colors.red.main }}>
+                    Cancel
                   </ThemedText>
                 </Pressable>
-              </>
+                {isHeader && (
+                  <>
+                    <ThemedText
+                      type="semiBold"
+                      style={{ fontSize: 20, color: colors.green.main }}
+                    >
+                      {headerTitle}
+                    </ThemedText>
+                    <Pressable onPress={onPressAction} disabled={disabled}>
+                      <ThemedText
+                        style={{
+                          fontSize: 20,
+                          color: disabled
+                            ? colors.text.gray
+                            : colors.green.main,
+                        }}
+                      >
+                        Request
+                      </ThemedText>
+                    </Pressable>
+                  </>
+                )}
+              </View>
             )}
-          </View>
-        )}
-        <View style={styles.children}>
-          <>{children}</>
-          {isButton && (
-            <GlobalButton text="Got it" onPress={handleBottomButton} />
-          )}
-        </View>
+            <View style={styles.children}>
+              <>{children}</>
+              {isButton && (
+                <GlobalButton text="Got it" onPress={handleBottomButton} />
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Animated.View>
     </View>
   );

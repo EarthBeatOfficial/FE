@@ -1,28 +1,26 @@
 import React from "react";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { SignalType } from "../constants/signalTypes";
 
 interface SignalIconProps {
-  id: number;
-  title: string;
-  image: any;
-  color: string;
+  signal: SignalType;
   size?: number;
   disabled?: boolean;
   onPress?: () => void;
-  imgSize?: number;
   selected?: boolean;
   key: number;
+  imgSize?: number;
 }
 
 const SignalIcon: React.FC<SignalIconProps> = ({
-  image,
-  color,
   size = 56, // default size
   disabled,
   onPress,
-  imgSize,
   selected = true, // true by default
+  signal,
+  imgSize,
 }) => {
+  const { image, color } = signal;
   const IconContent = (
     <View
       style={[

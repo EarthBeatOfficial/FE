@@ -1,8 +1,9 @@
 import { Image, StyleSheet, View } from "react-native";
-
-import UserImage from "../assets/images/user-head.png";
 import { colors } from "../constants/colors";
 import { ThemedText } from "./ThemedText";
+
+// images / icons
+import UserImage from "@/assets/images/user-head.png";
 
 const NameCard = (props: any) => {
   const { name, numResponds } = props;
