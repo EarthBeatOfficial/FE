@@ -65,7 +65,7 @@ export default function NicknameScreen() {
 
   return (
     <>
-      {isLoading && <LoadingModal message={`Welcoming ${nickname}...`} />}
+      {isLoading && <LoadingModal message={`Welcoming...`} name={nickname} />}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}

@@ -4,9 +4,10 @@ import { ThemedText } from "../ThemedText";
 
 interface LoadingModalProps {
   message?: string;
+  name?: string;
 }
 
-const LoadingModal = ({ message }: LoadingModalProps) => {
+const LoadingModal = ({ message, name }: LoadingModalProps) => {
   return (
     <>
       <Modal>
@@ -19,12 +20,23 @@ const LoadingModal = ({ message }: LoadingModalProps) => {
               style={{
                 color: colors.green.main,
                 fontSize: 20,
-                width: "50%",
                 textAlign: "center",
               }}
             >
               {message}
             </ThemedText>
+            {name && (
+              <ThemedText
+                type="semiBold"
+                style={{
+                  color: colors.green.main,
+                  fontSize: 20,
+                  textAlign: "center",
+                }}
+              >
+                {name}!
+              </ThemedText>
+            )}
           </View>
         </View>
         {/* </View> */}
@@ -50,6 +62,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 30,
+    width: "50%",
   },
 });
 

@@ -22,6 +22,7 @@ import GlobalInput from "../components/GlobalInput";
 import InfoTooltip from "../components/InfoTooltip";
 import AutoCompleteModal from "../components/modals/AutoCompleteModal";
 import BottomSheetModal from "../components/modals/BottomSheetModal";
+import ConfirmModal from "../components/modals/ConfirmModal";
 import ModalSection from "../components/modals/ModalSection";
 import NameCard from "../components/NameCard";
 import Selector from "../components/Selector";
@@ -78,10 +79,10 @@ export default function HomeScreen() {
     timeLimit: 10, // default 10 minutes
     categoryId: null,
   });
-  const [route, setRoute] = useState();
   const [isPanEnabled, setIsPanEnabled] = useState(true);
   const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
   const [placeSuggestions, setPlaceSuggestions] = useState([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const GOOOGLE_API_KEY = "AIzaSyAFdSqMPFP89HZa_bKh4v6GveO_TY4x4VI";
 
@@ -148,14 +149,13 @@ export default function HomeScreen() {
     handleSignalData(minutes, "timeLimit");
   };
 
-  const handleSignalSubmit = async () => {
+  const generateSignal = async () => {
     try {
       const response = await createSignal({
         ...signalData,
         userId: userData?.userId,
       });
       // store in redux?
-      console.log(response);
 
       // Set the start time when the signal is created
       setSignalStartTime(new Date());
@@ -164,6 +164,8 @@ export default function HomeScreen() {
       setShowAddSignal(false);
     } catch (error) {
       console.error("Error creating signal:", error);
+    } finally {
+      setShowConfirmModal(true);
     }
   };
 
@@ -359,7 +361,7 @@ export default function HomeScreen() {
           isHeader
           headerTitle="Help Signal"
           isPanEnabled={isPanEnabled}
-          onPressAction={handleSignalSubmit}
+          onPressAction={generateSignal}
           disabled={
             !signalData.categoryId &&
             !signalData.description &&
@@ -444,7 +446,7 @@ export default function HomeScreen() {
         </BottomSheetModal>
 
         {/* ------------- Add Signal Button -------------- */}
-        {!showAddSignal && !showSuccessModal && (
+        {!showAddSignal && !showSuccessModal && !showConfirmModal && (
           <View style={styles.buttonBox}>
             <Pressable
               onPress={() => setShowAddSignal(true)}
@@ -511,6 +513,11 @@ export default function HomeScreen() {
             message={`Generating a walk trail based on your selection...`}
           />
         )}
+        <ConfirmModal
+          signalTitle={signalData?.title}
+          isVisible={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+        />
       </View>
     </TouchableWithoutFeedback>
     // </KeyboardAvoidingView>
