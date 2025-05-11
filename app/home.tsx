@@ -15,6 +15,7 @@ import {
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
+import LoadingModal from "@/components/modals/LoadingModal";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import CountdownTimer from "../components/CountdownTimer";
 import GlobalInput from "../components/GlobalInput";
@@ -167,6 +168,7 @@ export default function HomeScreen() {
   };
 
   const generateWalkTrail = async () => {
+    setIsLoading(true);
     try {
       const resp = await recommendRoute({
         userId: userData?.userId,
@@ -175,9 +177,11 @@ export default function HomeScreen() {
         distance: trailData?.distance,
       });
       dispatch(setRecommendedRoute(resp));
-      router.push("/map");
     } catch (error: any) {
       console.log("Error generating a route recommendation", error);
+    } finally {
+      setIsLoading(false);
+      router.push("/map");
     }
 
     if (trailData?.location) {
@@ -499,6 +503,12 @@ export default function HomeScreen() {
               // Handle when time is up
               console.log("Time limit reached!");
             }}
+          />
+        )}
+
+        {isLoading && (
+          <LoadingModal
+            message={`Generating a walk trail based on your selection...`}
           />
         )}
       </View>
