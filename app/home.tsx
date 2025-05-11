@@ -54,7 +54,7 @@ import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 // for testing
-import SignalModal from "../components/modals/SignalModal";
+import RouteModal from "../components/modals/RouteModal";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -288,6 +288,15 @@ export default function HomeScreen() {
     selectedUserId: 5,
     expiresAt: "2025-05-09T14:02:04.140Z",
   };
+
+  const testingRoute = {
+    distance: 1.5,
+    location:
+      '{"latitude": 37.585217458447744, "longitude": 127.02856845626475}',
+    themeId: 2,
+    userId: 26,
+  };
+
   return (
     // <KeyboardAvoidingView
     //   behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -547,8 +556,15 @@ export default function HomeScreen() {
           onClose={() => setShowNotification(false)}
           data={testing}
           buttonText={"Mark as Responded"}
-          onPress={(id) => console.log(id)}
+          onPress={(id)
+           => console.log(id)}
         /> */}
+        {/* testing - Take Route */}
+        <RouteModal
+          themeId={testingRoute?.themeId}
+          distance={testingRoute?.distance}
+          onPress={() => console.log("clicked")}
+        />
       </View>
     </TouchableWithoutFeedback>
     // </KeyboardAvoidingView>
