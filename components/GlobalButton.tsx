@@ -27,7 +27,7 @@ const GlobalButton: React.FC<GlobalButtonProps> = ({
       {...props}
       mode="contained"
       onPress={onPress}
-      labelStyle={styles.label}
+      labelStyle={[styles.label, disabled && styles.disabledLabel]}
       disabled={disabled}
       style={[
         styles.button,
@@ -65,6 +65,9 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
+  },
+  disabledLabel: {
+    color: colors.darkGray.main,
   },
 });
 

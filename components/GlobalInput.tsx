@@ -63,6 +63,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: colors.darkGray.main,
     fontFamily: "Poppins_400Regular",
+    lineHeight: 25,
   },
   errorOutline: {
     borderWidth: 1,
