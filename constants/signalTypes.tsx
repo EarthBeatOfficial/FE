@@ -1,4 +1,4 @@
-interface SignalType {
+export interface SignalType {
   id: number;
   title: string;
   color: string;

@@ -7,7 +7,6 @@ import { getAllSignals } from "../api/signalApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 /**
  * <주석 type에 대한 설명>
  * HACK : 추후 수정 필요
@@ -256,7 +255,6 @@ const styles = StyleSheet.create({
 
   return (
   <View style={styles.container}>
-    {/* FIXME: 상단 바 이중 문제. 합쳐야 함 */}
     <View style={styles.topBar}>
       {/* 백버튼 */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/home")}>
