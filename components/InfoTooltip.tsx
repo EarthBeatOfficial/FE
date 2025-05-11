@@ -72,7 +72,7 @@ const InfoTooltip = ({ onOpen }: InfoTooltipProps) => {
                   }}
                 >
                   <SignalIcon
-                    {...signal}
+                    signal={signal}
                     size={40}
                     imgSize={30}
                     disabled

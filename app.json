@@ -37,6 +37,10 @@
         }
       ],
       "expo-font"
+      // "expo-location",
+      // {
+      //   "locationAlwaysAndWhenInUsePermission": "Allow $(Earth Beat) to use your location."
+      // }
     ],
     "experiments": {
       "typedRoutes": true
