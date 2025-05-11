@@ -14,7 +14,15 @@ const LoadingModal = ({ message }: LoadingModalProps) => {
         <View style={styles.container}>
           <View style={styles.content}>
             <ActivityIndicator size="large" color={colors.green.main} />
-            <ThemedText type="semiBold" style={{ color: colors.green.main }}>
+            <ThemedText
+              type="semiBold"
+              style={{
+                color: colors.green.main,
+                fontSize: 20,
+                width: "50%",
+                textAlign: "center",
+              }}
+            >
               {message}
             </ThemedText>
           </View>
