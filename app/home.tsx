@@ -12,17 +12,16 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import styled from "styled-components/native";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
-import AutoCompleteModal from "../components/AutoCompleteModal";
-import BottomSheetModal from "../components/BottomSheetModal";
 import CountdownTimer from "../components/CountdownTimer";
 import GlobalInput from "../components/GlobalInput";
 import InfoTooltip from "../components/InfoTooltip";
-import ModalSection from "../components/ModalSection";
+import AutoCompleteModal from "../components/modals/AutoCompleteModal";
+import BottomSheetModal from "../components/modals/BottomSheetModal";
+import ModalSection from "../components/modals/ModalSection";
 import NameCard from "../components/NameCard";
 import Selector from "../components/Selector";
 import SignalIcon from "../components/SignalIcon";
@@ -42,12 +41,15 @@ import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
 import SuccessIcon from "@/assets/images/success-hands.png";
 
-// API / redux
-import { recommendRoute } from "@/api/routesApi";
-import { createSignal } from "@/api/signalApi";
-import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
+// Redux
 import { setRecommendedRoute } from "@/redux/routeSlice";
 import { useDispatch } from "react-redux";
+
+// API
+import { recommendRoute } from "@/api/routesApi";
+import { createSignal } from "@/api/signalApi";
+// import { getResponses } from "@/api/responsesApi";
+import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -248,7 +250,12 @@ export default function HomeScreen() {
         <View style={styles.container}>
           <ParallaxScrollView>
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingTop: 10,
+              }}
             >
               <Image
                 source={LogoImage}
@@ -434,7 +441,7 @@ export default function HomeScreen() {
 
         {/* ------------- Add Signal Button -------------- */}
         {!showAddSignal && !showSuccessModal && (
-          <ButtonBox>
+          <View style={styles.buttonBox}>
             <Pressable
               onPress={() => setShowAddSignal(true)}
               style={styles.helpButton}
@@ -444,7 +451,7 @@ export default function HomeScreen() {
                 style={{ width: 56, height: 56, resizeMode: "contain" }}
               />
             </Pressable>
-          </ButtonBox>
+          </View>
         )}
 
         {/* ------------- Popup for when someone completes a signal -------------- */}
@@ -499,13 +506,6 @@ export default function HomeScreen() {
     // </KeyboardAvoidingView>
   );
 }
-
-const ButtonBox = styled.View`
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  z-index: 1000;
-`;
 
 const styles = StyleSheet.create({
   container: {
@@ -575,5 +575,11 @@ const styles = StyleSheet.create({
   message: {
     color: colors.darkGray.main,
     fontSize: 16,
+  },
+  buttonBox: {
+    position: "absolute",
+    bottom: 15,
+    right: 15,
+    zIndex: 1000,
   },
 });
