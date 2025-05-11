@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 
+import GlobalInput from "../GlobalInput";
 import BottomSheetModal from "./BottomSheetModal";
-import GlobalInput from "./GlobalInput";
 import ModalSection from "./ModalSection";
-import SignalIcon from "./SignalIcon";
+import SignalIcon from "../SignalIcon";
 
-import signalTypes from "../constants/signalTypes";
+import signalTypes from "../../constants/signalTypes";
 
 interface SignalModalProps {
   categoryId: number;
