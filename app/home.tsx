@@ -53,6 +53,9 @@ import { recommendRoute } from "@/api/routesApi";
 import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
+// for testing
+import SignalModal from "../components/modals/SignalModal";
+
 export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -271,6 +274,20 @@ export default function HomeScreen() {
     }
   };
 
+  const testing = {
+    id: 3,
+    userId: 1,
+    categoryId: 5,
+    title: "Help needed with recycling",
+    description: "Need help sorting recyclables at the community center",
+    lat: 37.5665,
+    lng: 126.978,
+    createdAt: "2025-05-09T13:32:04.142Z",
+    timeLimit: 30,
+    status: "IN_PROGRESS",
+    selectedUserId: 5,
+    expiresAt: "2025-05-09T14:02:04.140Z",
+  };
   return (
     // <KeyboardAvoidingView
     //   behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -515,6 +532,23 @@ export default function HomeScreen() {
           isVisible={showConfirmModal}
           onClose={() => setShowConfirmModal(false)}
         />
+
+        {/* testing - Accept*/}
+        {/* <SignalModal
+          isAccept
+          onClose={() => setShowNotification(false)}
+          data={testing}
+          buttonText={"Accept"}
+          onPress={(id) => console.log(id)}
+        /> */}
+        {/* testing - Mark as responded*/}
+        {/* <SignalModal
+          isAccept={false}
+          onClose={() => setShowNotification(false)}
+          data={testing}
+          buttonText={"Mark as Responded"}
+          onPress={(id) => console.log(id)}
+        /> */}
       </View>
     </TouchableWithoutFeedback>
     // </KeyboardAvoidingView>
