@@ -2,6 +2,8 @@ import { DirectionsRenderer, DirectionsService, GoogleMap, LoadScript, Marker } 
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/store';
 
 import { getAllSignals } from "../api/signalApi";
 
@@ -90,13 +92,17 @@ export default function MapScreen() {
   
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(MOCK_DIRECTIONS_REQUEST.origin);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 37.544582, lng: 127.037589 });
 
   const router = useRouter();
+   // call the recommended route through redux
+  const recommendedRoute = useSelector(
+    (state: RootState) => state.route.recommendedRoute
+  );
 
   // 현재 위치 추적
   useEffect(() => {
-    if (navigator.geolocation) {
+    if (navigator.geolocation && window.google) {
       // watchPosition은 위치가 바뀔 때마다 콜백을 실행
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -137,6 +143,24 @@ export default function MapScreen() {
 
     fetchSignals();
   }, []);
+
+  // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
+  useEffect(() => {
+    if (recommendedRoute) {
+      const directionsRequest = {
+        ...recommendedRoute,
+        travelMode: "WALKING" as google.maps.TravelMode,
+      };
+      
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(directionsRequest, (result, status) => {
+        if (status === "OK" && result) {
+          setDirections(result);
+          setMapCenter(recommendedRoute.origin);
+        }
+      });
+    }
+  }, [recommendedRoute]);
 
   // DirectionsService 요청 결과 처리
   const directionsCallback = (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
