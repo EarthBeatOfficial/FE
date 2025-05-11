@@ -24,6 +24,7 @@ import AutoCompleteModal from "../components/modals/AutoCompleteModal";
 import BottomSheetModal from "../components/modals/BottomSheetModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import ModalSection from "../components/modals/ModalSection";
+import NotificationModal from "../components/modals/NotificationModal";
 import NameCard from "../components/NameCard";
 import Selector from "../components/Selector";
 import SignalIcon from "../components/SignalIcon";
@@ -41,16 +42,15 @@ import signalTypes from "../constants/signalTypes";
 import MainHelpIcon from "@/assets/icons/main-help.png";
 import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
-import SuccessIcon from "@/assets/images/success-hands.png";
 
 // Redux
 import { setRecommendedRoute } from "@/redux/routeSlice";
 import { useDispatch } from "react-redux";
 
 // API
+import { getResponses, markResponseAsRead } from "@/api/responsesApi";
 import { recommendRoute } from "@/api/routesApi";
 import { createSignal } from "@/api/signalApi";
-// import { getResponses } from "@/api/responsesApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 export default function HomeScreen() {
@@ -68,9 +68,11 @@ export default function HomeScreen() {
     themeId: null,
     location: "",
   });
-  const [responseData, setResponseData] = useState({ message: "", title: "" });
+  const [responseData, setResponseData] = useState<
+    [{ message: string; id: number; signal: { title: string } }]
+  >([{ message: "", id: 0, signal: { title: "" } }]);
   const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(true);
+  const [showNotification, setShowNotification] = useState(false);
   const [signalData, setSignalData] = useState({
     title: "",
     description: "",
@@ -84,6 +86,8 @@ export default function HomeScreen() {
   const [placeSuggestions, setPlaceSuggestions] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const today = moment().format("MMMM Do");
+  const day = moment().format("dddd");
   const GOOOGLE_API_KEY = "AIzaSyAFdSqMPFP89HZa_bKh4v6GveO_TY4x4VI";
 
   const fetchPlaceSuggestions = async (input: string) => {
@@ -121,8 +125,6 @@ export default function HomeScreen() {
       });
     }
   };
-
-  console.log("signal", signalData);
 
   const handleSelect = async (placeId: string) => {
     const res = await fetch(
@@ -192,9 +194,6 @@ export default function HomeScreen() {
     }
   };
 
-  const today = moment().format("MMMM Do");
-  const day = moment().format("dddd");
-
   useEffect(() => {
     async function fetchUserData() {
       try {
@@ -230,7 +229,7 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    const fetchWalkLongData = async () => {
+    async function fetchWalkLogData() {
       if (userData && userData?.userId) {
         try {
           const numWalkLogs = await getWalkLogNum(userData?.userId);
@@ -241,9 +240,36 @@ export default function HomeScreen() {
           console.error("Error fetching walk log data:", error);
         }
       }
-    };
-    fetchWalkLongData();
+    }
+    async function fetchResponseData() {
+      if (userData && userData?.userId) {
+        try {
+          const respData = await getResponses(userData?.userId);
+          if (respData) {
+            setResponseData(respData);
+            if (respData.length > 0) {
+              setShowNotification(true);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching response data:", error);
+        }
+      }
+    }
+    fetchWalkLogData();
+    fetchResponseData();
   }, [userData]);
+
+  const markAsRead = async (responseId: number) => {
+    try {
+      const data = await markResponseAsRead({ responseId: responseId });
+      console.log(data);
+    } catch (error) {
+      console.log("Error marking response as read", error);
+    } finally {
+      //   setShowNotification(false);
+    }
+  };
 
   return (
     // <KeyboardAvoidingView
@@ -446,7 +472,7 @@ export default function HomeScreen() {
         </BottomSheetModal>
 
         {/* ------------- Add Signal Button -------------- */}
-        {!showAddSignal && !showSuccessModal && !showConfirmModal && (
+        {!showAddSignal && !showNotification && !showConfirmModal && (
           <View style={styles.buttonBox}>
             <Pressable
               onPress={() => setShowAddSignal(true)}
@@ -461,41 +487,12 @@ export default function HomeScreen() {
         )}
 
         {/* ------------- Popup for when someone completes a signal -------------- */}
-        <BottomSheetModal
-          isVisible={showSuccessModal}
-          onClose={() => setShowSuccessModal(false)}
-          height={550}
-          isButton
-        >
-          <View
-            style={{
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 15,
-            }}
-          >
-            <Image source={SuccessIcon} style={{ width: 200, height: 200 }} />
-            <ThemedText style={{ textAlign: "center", fontSize: 16 }}>
-              A helpful responder{"\n"}
-              just completed your signal
-            </ThemedText>
-            <ThemedText
-              type="semiBold"
-              style={{ color: colors.green.main, fontSize: 25 }}
-            >
-              {responseData?.title}
-            </ThemedText>
-            <View style={styles.messageBox}>
-              <ThemedText style={styles.message}>
-                Message from responder:
-              </ThemedText>
-              <ThemedText style={styles.message}>
-                {responseData?.message}
-                hello
-              </ThemedText>
-            </View>
-          </View>
-        </BottomSheetModal>
+        <NotificationModal
+          isVisible={showNotification}
+          onClose={() => setShowNotification(false)}
+          responseData={responseData}
+          onButtonPress={markAsRead}
+        />
 
         {signalStartTime && (
           <CountdownTimer
