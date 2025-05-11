@@ -8,6 +8,9 @@ interface GlobalInputProps {
   onChangeText?: (text: string) => void;
   placeholder?: string;
   isError?: boolean;
+  multiline?: boolean;
+  numberOfLines?: number;
+  readOnly?: boolean;
 }
 
 const GlobalInput = ({
@@ -15,6 +18,9 @@ const GlobalInput = ({
   onChangeText,
   placeholder,
   isError,
+  multiline,
+  numberOfLines,
+  readOnly,
 }: GlobalInputProps) => {
   return (
     <TextInput
@@ -27,6 +33,9 @@ const GlobalInput = ({
       outlineStyle={isError ? styles.errorOutline : styles.outline}
       contentStyle={isError ? styles.errorContent : styles.content}
       theme={{ roundness: 10 }}
+      multiline={multiline}
+      numberOfLines={numberOfLines}
+      readOnly={readOnly}
     />
   );
 };
@@ -34,6 +43,7 @@ const GlobalInput = ({
 const styles = StyleSheet.create({
   input: {
     backgroundColor: "#fff",
+    color: "#AFAFAF",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -51,7 +61,8 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    color: "#AFAFAF",
+    color: colors.darkGray.main,
+    fontFamily: "Poppins_400Regular",
   },
   errorOutline: {
     borderWidth: 1,
@@ -62,6 +73,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     color: colors.red.main,
+    fontFamily: "Poppins_400Regular",
   },
 });
 
