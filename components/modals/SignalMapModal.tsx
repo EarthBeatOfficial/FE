@@ -16,8 +16,8 @@ import walkThemes from "../../constants/walkThemes";
 interface SignalMapModalProps {
   themeId?: number;
   distance?: number;
-  onRespond?: () => void;
-  onCancel?: () => void;
+  onRespond: (signalId: number) => void;
+  onCancel: (signalId: number) => void;
   data: {
     id: number;
     title: string;
@@ -89,10 +89,13 @@ const SignalMapModal = ({
                 isShadow
               />
             </View>
-            <GlobalButton text="Mark as Responded" onPress={onRespond} />
+            <GlobalButton
+              text="Mark as Responded"
+              onPress={() => onRespond(data?.id)}
+            />
             <GlobalButton
               text="Cancel Signal"
-              onPress={onCancel}
+              onPress={() => onCancel(data?.id)}
               color={colors.red.main}
             />
           </View>
