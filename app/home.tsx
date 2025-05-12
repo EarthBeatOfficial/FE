@@ -567,11 +567,11 @@ export default function HomeScreen() {
           onPress={() => console.log("clicked")}
         /> */}
         {/* testing - Show Signal on Map */}
-        <SignalMapModal
+        {/* <SignalMapModal
           data={testing}
           onCancel={(id) => console.log(id)}
           onRespond={(id) => console.log(id)}
-        />
+        /> */}
       </View>
     </TouchableWithoutFeedback>
     // </KeyboardAvoidingView>
