@@ -2,9 +2,7 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
   PanResponder,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -121,61 +119,53 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
         ]}
         {...(isPanEnabled ? panResponder.panHandlers : {})}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 200 : 0}
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ flexGrow: 1 }}
-          >
-            <View style={styles.handle} />
-            {isCancelButton && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 15,
-                }}
-              >
-                <Pressable onPress={closeModal}>
-                  <ThemedText style={{ fontSize: 20, color: colors.red.main }}>
-                    Cancel
+          <View style={styles.handle} />
+          {isCancelButton && (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 15,
+              }}
+            >
+              <Pressable onPress={closeModal}>
+                <ThemedText style={{ fontSize: 20, color: colors.red.main }}>
+                  Cancel
+                </ThemedText>
+              </Pressable>
+              {isHeader && (
+                <>
+                  <ThemedText
+                    type="semiBold"
+                    style={{ fontSize: 20, color: colors.green.main }}
+                  >
+                    {headerTitle}
                   </ThemedText>
-                </Pressable>
-                {isHeader && (
-                  <>
+                  <Pressable onPress={onPressAction} disabled={disabled}>
                     <ThemedText
-                      type="semiBold"
-                      style={{ fontSize: 20, color: colors.green.main }}
+                      style={{
+                        fontSize: 20,
+                        color: disabled ? colors.text.gray : colors.green.main,
+                      }}
                     >
-                      {headerTitle}
+                      Request
                     </ThemedText>
-                    <Pressable onPress={onPressAction} disabled={disabled}>
-                      <ThemedText
-                        style={{
-                          fontSize: 20,
-                          color: disabled
-                            ? colors.text.gray
-                            : colors.green.main,
-                        }}
-                      >
-                        Request
-                      </ThemedText>
-                    </Pressable>
-                  </>
-                )}
-              </View>
-            )}
-            <View style={styles.children}>
-              <>{children}</>
-              {isButton && (
-                <GlobalButton text="Got it" onPress={handleBottomButton} />
+                  </Pressable>
+                </>
               )}
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          )}
+          <View style={styles.children}>
+            <>{children}</>
+            {isButton && (
+              <GlobalButton text="Got it" onPress={handleBottomButton} />
+            )}
+          </View>
+        </ScrollView>
       </Animated.View>
     </View>
   );
