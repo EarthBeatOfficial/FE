@@ -11,9 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { colors } from "../constants/colors";
-import GlobalButton from "./GlobalButton";
-import { ThemedText } from "./ThemedText";
+import { colors } from "../../constants/colors";
+import GlobalButton from "../GlobalButton";
+import { ThemedText } from "../ThemedText";
 
 interface BottomSheetModalProps {
   isVisible: boolean;
