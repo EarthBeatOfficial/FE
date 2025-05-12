@@ -10,6 +10,7 @@ interface SignalIconProps {
   selected?: boolean;
   key: number;
   imgSize?: number;
+  isShadow?: boolean;
 }
 
 const SignalIcon: React.FC<SignalIconProps> = ({
@@ -19,6 +20,7 @@ const SignalIcon: React.FC<SignalIconProps> = ({
   selected = true, // true by default
   signal,
   imgSize,
+  isShadow = false,
 }) => {
   const { image, color } = signal;
   const IconContent = (
@@ -32,6 +34,7 @@ const SignalIcon: React.FC<SignalIconProps> = ({
           borderRadius: size / 2,
           opacity: selected ? 1 : 0.5,
         },
+        isShadow && styles.shadow,
       ]}
     >
       <Image
@@ -66,6 +69,17 @@ const styles = StyleSheet.create({
   },
   image: {
     // tintColor: "#fff", // makes the image white
+  },
+  shadow: {
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
   },
 });
 
