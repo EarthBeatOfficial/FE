@@ -133,7 +133,7 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
               }}
             >
               <Pressable onPress={closeModal}>
-                <ThemedText style={{ fontSize: 20, color: colors.red.main }}>
+                <ThemedText style={{ fontSize: 16, color: colors.red.main }}>
                   Cancel
                 </ThemedText>
               </Pressable>
@@ -141,14 +141,14 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                 <>
                   <ThemedText
                     type="semiBold"
-                    style={{ fontSize: 20, color: colors.green.main }}
+                    style={{ fontSize: 16, color: colors.green.main }}
                   >
                     {headerTitle}
                   </ThemedText>
                   <Pressable onPress={onPressAction} disabled={disabled}>
                     <ThemedText
                       style={{
-                        fontSize: 20,
+                        fontSize: 16,
                         color: disabled ? colors.text.gray : colors.green.main,
                       }}
                     >

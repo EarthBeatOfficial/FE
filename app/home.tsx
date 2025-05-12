@@ -299,229 +299,221 @@ export default function HomeScreen() {
   };
 
   return (
-    // <KeyboardAvoidingView
-    //   behavior={Platform.OS === "ios" ? "padding" : "height"}
-    //   style={{ flex: 1 }}
-    //   keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0}
-    // >
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <View style={styles.container}>
       <View style={styles.container}>
-        <View style={styles.container}>
-          <ParallaxScrollView>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-                paddingTop: 10,
-              }}
-            >
-              <Image
-                source={LogoImage}
-                style={{ width: 45, height: 56, resizeMode: "contain" }}
-              />
-              <Image
-                source={LogoText}
-                style={{ width: 186, height: 22, resizeMode: "contain" }}
-              />
-            </View>
-            <NameCard name={userData?.nickname} numResponds={numResponds} />
-            <ThemedText style={{ marginBottom: -10 }}>
-              Walking Distance
-            </ThemedText>
-            <View style={styles.flexContainer}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  gap: 5,
-                }}
-              >
-                {distanceData.map((data, key) => {
-                  return (
-                    <Selector
-                      data={data}
-                      key={key}
-                      selected={trailData?.distance === data.distance}
-                      onPress={(distance: any) =>
-                        handleSetTrailData("distance", distance)
-                      }
-                    />
-                  );
-                })}
-              </ScrollView>
-            </View>
-            <ThemedText style={{ marginBottom: -10 }}>
-              Walking Trail Themes
-            </ThemedText>
-            <View style={styles.flexContainer}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  gap: 5,
-                }}
-              >
-                {walkThemes.map((theme, key) => {
-                  return (
-                    <ThemeCard
-                      disabled={trailData?.distance === null}
-                      theme={theme}
-                      key={key}
-                      selected={trailData?.themeId === theme.id}
-                      onPress={() => {
-                        handleSetTrailData("themeId", theme.id);
-                      }}
-                    />
-                  );
-                })}
-              </ScrollView>
-            </View>
-            <GlobalButton
-              text="Start Walking"
-              onPress={() => generateWalkTrail()}
-              disabled={trailData?.distance === null || !trailData?.themeId}
+        <ParallaxScrollView>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              paddingTop: 10,
+            }}
+          >
+            <Image
+              source={LogoImage}
+              style={{ width: 45, height: 56, resizeMode: "contain" }}
             />
-            {walkLogs?.length !== 0 && (
-              <>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  <ThemedText
-                    style={{ fontSize: 25, color: colors.green.main }}
-                  >
-                    Today, {today}
-                  </ThemedText>
-                  <ThemedText type="light" style={{ color: colors.text.gray }}>
-                    {day}
-                  </ThemedText>
-                </View>
-                <View style={styles.listContainer}></View>
-              </>
-            )}
-          </ParallaxScrollView>
-        </View>
-
-        <BottomSheetModal
-          isVisible={showAddSignal}
-          onClose={() => setShowAddSignal(false)}
-          height={630}
-          isCancelButton
-          isHeader
-          headerTitle="Help Signal"
-          isPanEnabled={isPanEnabled}
-          onPressAction={generateSignal}
-          disabled={
-            !signalData.categoryId &&
-            !signalData.description &&
-            !signalData.lat &&
-            !signalData.lng &&
-            !signalData.timeLimit &&
-            !signalData.title
-          }
-        >
-          <ModalSection style={{ marginBottom: 16 }}>
-            <GlobalInput
-              placeholder="Title (i.e. Please water my plant!)"
-              onChangeText={(value) => handleSignalData(value, "title")}
+            <Image
+              source={LogoText}
+              style={{ width: 186, height: 22, resizeMode: "contain" }}
             />
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingLeft: 10,
-                paddingRight: 10,
+          </View>
+          <NameCard name={userData?.nickname} numResponds={numResponds} />
+          <ThemedText style={{ marginBottom: -10 }}>
+            Walking Distance
+          </ThemedText>
+          <View style={styles.flexContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                gap: 5,
               }}
             >
-              <ThemedText style={{ color: colors.darkGray.main }}>
-                Categories
-              </ThemedText>
-              <InfoTooltip onOpen={() => setIsPanEnabled((state) => !state)} />
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                flexWrap: "wrap",
-                gap: 10,
-              }}
-            >
-              {signalTypes.map((signal, key) => {
+              {distanceData.map((data, key) => {
                 return (
-                  <SignalIcon
-                    signal={signal}
+                  <Selector
+                    data={data}
                     key={key}
-                    selected={signalData?.categoryId === signal.id}
-                    onPress={() => handleSignalData(signal.id, "categoryId")}
+                    selected={trailData?.distance === data.distance}
+                    onPress={(distance: any) =>
+                      handleSetTrailData("distance", distance)
+                    }
                   />
                 );
               })}
-            </View>
-            <GlobalInput
-              placeholder="Description"
-              //   multiline
-              numberOfLines={3}
-              onChangeText={(value) => handleSignalData(value, "description")}
-            />
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingLeft: 10,
-                paddingRight: 10,
+            </ScrollView>
+          </View>
+          <ThemedText style={{ marginBottom: -10 }}>
+            Walking Trail Themes
+          </ThemedText>
+          <View style={styles.flexContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                gap: 5,
               }}
             >
-              <ThemedText style={{ color: colors.darkGray.main }}>
-                Time Limit
-              </ThemedText>
-              <TimePicker
-                onTimeSelect={handleTimeSelect}
-                initialTime={signalData.timeLimit}
-                onOpen={() => setIsPanEnabled((state) => !state)}
-              />
-            </View>
-          </ModalSection>
-          <ModalSection style={{ marginBottom: 16 }}>
-            <AutoCompleteModal
-              fetchSuggestions={fetchPlaceSuggestions}
-              suggestions={placeSuggestions}
-              onSelect={(placeId) => handleSelect(placeId)}
-              //   onOpen={() => setIsPanEnabled((state) => !state)}
-            />
-          </ModalSection>
-        </BottomSheetModal>
-
-        {/* ------------- Add Signal Button -------------- */}
-        {!showAddSignal && !showNotification && !showConfirmModal && (
-          <View style={styles.buttonBox}>
-            <Pressable
-              onPress={() => setShowAddSignal(true)}
-              style={styles.helpButton}
-            >
-              <Image
-                source={MainHelpIcon}
-                style={{ width: 56, height: 56, resizeMode: "contain" }}
-              />
-            </Pressable>
+              {walkThemes.map((theme, key) => {
+                return (
+                  <ThemeCard
+                    disabled={trailData?.distance === null}
+                    theme={theme}
+                    key={key}
+                    selected={trailData?.themeId === theme.id}
+                    onPress={() => {
+                      handleSetTrailData("themeId", theme.id);
+                    }}
+                  />
+                );
+              })}
+            </ScrollView>
           </View>
-        )}
+          <GlobalButton
+            text="Start Walking"
+            onPress={() => generateWalkTrail()}
+            disabled={trailData?.distance === null || !trailData?.themeId}
+          />
+          {walkLogs?.length !== 0 && (
+            <>
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <ThemedText style={{ fontSize: 25, color: colors.green.main }}>
+                  Today, {today}
+                </ThemedText>
+                <ThemedText type="light" style={{ color: colors.text.gray }}>
+                  {day}
+                </ThemedText>
+              </View>
+              <View style={styles.listContainer}></View>
+            </>
+          )}
+        </ParallaxScrollView>
+      </View>
 
-        {/* ------------- Popup for when someone completes a signal -------------- */}
-        <NotificationModal
-          isVisible={showNotification}
-          onClose={() => setShowNotification(false)}
-          responseData={responseData}
-          onButtonPress={markAsRead}
-        />
+      <BottomSheetModal
+        isVisible={showAddSignal}
+        onClose={() => setShowAddSignal(false)}
+        height={630}
+        isCancelButton
+        isHeader
+        headerTitle="Help Signal"
+        isPanEnabled={isPanEnabled}
+        onPressAction={generateSignal}
+        disabled={
+          !signalData.categoryId &&
+          !signalData.description &&
+          !signalData.lat &&
+          !signalData.lng &&
+          !signalData.timeLimit &&
+          !signalData.title
+        }
+      >
+        <ModalSection style={{ marginBottom: 16 }}>
+          <GlobalInput
+            placeholder="Title (i.e. Please water my plant!)"
+            onChangeText={(value) => handleSignalData(value, "title")}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingLeft: 10,
+              paddingRight: 10,
+            }}
+          >
+            <ThemedText style={{ color: colors.darkGray.main }}>
+              Categories
+            </ThemedText>
+            <InfoTooltip onOpen={() => setIsPanEnabled((state) => !state)} />
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: 10,
+            }}
+          >
+            {signalTypes.map((signal, key) => {
+              return (
+                <SignalIcon
+                  signal={signal}
+                  key={key}
+                  selected={signalData?.categoryId === signal.id}
+                  onPress={() => handleSignalData(signal.id, "categoryId")}
+                />
+              );
+            })}
+          </View>
+          <GlobalInput
+            placeholder="Description"
+            //   multiline
+            numberOfLines={3}
+            onChangeText={(value) => handleSignalData(value, "description")}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingLeft: 10,
+              paddingRight: 10,
+            }}
+          >
+            <ThemedText style={{ color: colors.darkGray.main }}>
+              Time Limit
+            </ThemedText>
+            <TimePicker
+              onTimeSelect={handleTimeSelect}
+              initialTime={signalData.timeLimit}
+              onOpen={() => setIsPanEnabled((state) => !state)}
+            />
+          </View>
+        </ModalSection>
+        <ModalSection style={{ marginBottom: 16 }}>
+          <AutoCompleteModal
+            fetchSuggestions={fetchPlaceSuggestions}
+            suggestions={placeSuggestions}
+            onSelect={(placeId) => handleSelect(placeId)}
+            //   onOpen={() => setIsPanEnabled((state) => !state)}
+          />
+        </ModalSection>
+      </BottomSheetModal>
 
-        {/* {signalStartTime && (
+      {/* ------------- Add Signal Button -------------- */}
+      {!showAddSignal && !showNotification && !showConfirmModal && (
+        <View style={styles.buttonBox}>
+          <Pressable
+            onPress={() => setShowAddSignal(true)}
+            style={styles.helpButton}
+          >
+            <Image
+              source={MainHelpIcon}
+              style={{ width: 56, height: 56, resizeMode: "contain" }}
+            />
+          </Pressable>
+        </View>
+      )}
+
+      {/* ------------- Popup for when someone completes a signal -------------- */}
+      <NotificationModal
+        isVisible={showNotification}
+        onClose={() => setShowNotification(false)}
+        responseData={responseData}
+        onButtonPress={markAsRead}
+      />
+
+      {/* {signalStartTime && (
           <CountdownTimer
             // timeLimit={signalData.timeLimit}
             startTime={signalStartTime}
@@ -532,27 +524,27 @@ export default function HomeScreen() {
           />
         )} */}
 
-        {isLoading && (
-          <LoadingModal
-            message={`Generating a walk trail based on your selection...`}
-          />
-        )}
-        <ConfirmModal
-          signalTitle={signalData?.title}
-          isVisible={showConfirmModal}
-          onClose={() => setShowConfirmModal(false)}
+      {isLoading && (
+        <LoadingModal
+          message={`Generating a walk trail based on your selection...`}
         />
+      )}
+      <ConfirmModal
+        signalTitle={signalData?.title}
+        isVisible={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+      />
 
-        {/* testing - Accept*/}
-        {/* <SignalModal
+      {/* testing - Accept*/}
+      {/* <SignalModal
           isAccept
           onClose={() => setShowNotification(false)}
           data={testing}
           buttonText={"Accept"}
           onPress={(id) => console.log(id)}
         /> */}
-        {/* testing - Mark as responded*/}
-        {/* <SignalModal
+      {/* testing - Mark as responded*/}
+      {/* <SignalModal
           isAccept={false}
           onClose={() => setShowNotification(false)}
           data={testing}
@@ -560,21 +552,19 @@ export default function HomeScreen() {
           onPress={(id)
            => console.log(id)}
         /> */}
-        {/* testing - Take Route */}
-        {/* <RouteModal
+      {/* testing - Take Route */}
+      {/* <RouteModal
           themeId={testingRoute?.themeId}
           distance={testingRoute?.distance}
           onPress={() => console.log("clicked")}
         /> */}
-        {/* testing - Show Signal on Map */}
-        {/* <SignalMapModal
+      {/* testing - Show Signal on Map */}
+      {/* <SignalMapModal
           data={testing}
           onCancel={(id) => console.log(id)}
           onRespond={(id) => console.log(id)}
         /> */}
-      </View>
-    </TouchableWithoutFeedback>
-    // </KeyboardAvoidingView>
+    </View>
   );
 }
 
