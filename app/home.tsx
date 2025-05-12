@@ -31,6 +31,7 @@ import SignalIcon from "../components/SignalIcon";
 import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
 import TimePicker from "../components/TimePicker";
+import SignalMapModal from "../components/modals/SignalMapModal";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
@@ -282,11 +283,11 @@ export default function HomeScreen() {
     description: "Need help sorting recyclables at the community center",
     lat: 37.5665,
     lng: 126.978,
-    createdAt: "2025-05-09T13:32:04.142Z",
+    createdAt: "2025-05-12T21:12:04.142Z",
     timeLimit: 30,
     status: "IN_PROGRESS",
     selectedUserId: 5,
-    expiresAt: "2025-05-09T14:02:04.140Z",
+    expiresAt: "2025-05-12T21:42:04.142Z",
   };
 
   const testingRoute = {
@@ -520,16 +521,16 @@ export default function HomeScreen() {
           onButtonPress={markAsRead}
         />
 
-        {signalStartTime && (
+        {/* {signalStartTime && (
           <CountdownTimer
-            timeLimit={signalData.timeLimit}
+            // timeLimit={signalData.timeLimit}
             startTime={signalStartTime}
             onTimeUp={() => {
               // Handle when time is up
               console.log("Time limit reached!");
             }}
           />
-        )}
+        )} */}
 
         {isLoading && (
           <LoadingModal
