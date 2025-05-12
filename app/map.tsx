@@ -1,14 +1,27 @@
-import { DirectionsRenderer, DirectionsService, GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import {
+  DirectionsRenderer,
+  DirectionsService,
+  GoogleMap,
+  LoadScript,
+  Marker,
+} from "@react-google-maps/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
+// images / icons
+import ArrowIcon from "@/assets/icons/black-arrow.png";
+import UserImage from "@/assets/images/user-head.png";
+
+// constants
+import { GOOGLE_API_KEY } from "@/constants/tokens";
+import { colors } from "../constants/colors";
+
+// API
 import { getAllSignals, getMySignals } from "../api/signalApi";
-
-// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * <주석 type에 대한 설명>
@@ -31,40 +44,47 @@ interface Signal {
   expiresAt: string;
 }
 
-// 기본 경로 설정 (추후 Redux에서 데이터가 없을 경우 사용)
-const MOCK_DIRECTIONS_REQUEST = {
-  origin: { lat: 37.544582, lng: 127.037589 },
-  destination: { lat: 37.58000, lng: 127.035589 },
-  waypoints: [
-    { location: { lat: 37.546070, lng: 127.038879 } },
-    { location: { lat: 37.549907, lng: 127.033275 } },
-    { location: { lat: 37.531693, lng: 127.066134 } }
-  ],
-  travelMode: "WALKING" as google.maps.TravelMode,
-};
-
-const containerStyle = {
-  width: "100%",
-  height: "100%",
-};
-
 export default function MapScreen() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null); // 선택된 signal
-  const [modalVisible, setModalVisible] = useState<boolean>(false);         // 모달 창 표시 여부
-  const [signalList, setSignalList] = useState<Signal[]>([]);          // 현재 signal 리스트 상태
+  const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
+  const [signalList, setSignalList] = useState<Signal[]>([]); // 현재 signal 리스트 상태
   const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
   const [allSignals, setAllSignals] = useState<Signal[]>([]); // 모든 시그널을 합친 리스트
-  
-  const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 37.544582, lng: 127.037589 });
+
+  // 기본 경로 설정 (추후 Redux에서 데이터가 없을 경우 사용)
+  const MOCK_DIRECTIONS_REQUEST = {
+    origin: { lat: 37.544582, lng: 127.037589 },
+    destination: { lat: 37.58, lng: 127.035589 },
+    waypoints: [
+      { location: { lat: 37.54607, lng: 127.038879 } },
+      { location: { lat: 37.549907, lng: 127.033275 } },
+      { location: { lat: 37.531693, lng: 127.066134 } },
+    ],
+    travelMode: "WALKING" as google.maps.TravelMode,
+  };
+
+  const containerStyle = {
+    width: "100%",
+    height: "100%",
+  };
+
+  const [currentPosition, setCurrentPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [directions, setDirections] =
+    useState<google.maps.DirectionsResult | null>(null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
+    lat: 37.544582,
+    lng: 127.037589,
+  });
   const [userData, setUserData] = useState<{
-      userId: number;
-      nickname: string;
-    } | null>(null);
+    userId: number;
+    nickname: string;
+  } | null>(null);
 
   const router = useRouter();
-   // call the recommended route through redux
+  // call the recommended route through redux
   const recommendedRoute = useSelector(
     (state: RootState) => state.route?.recommendedRoute
   );
@@ -91,24 +111,19 @@ export default function MapScreen() {
       // 언마운트 시 추적 해제
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, []);
-
-  // PENDING 시그널 데이터 가져오기
-  useEffect(() => {
+    // PENDING 시그널 데이터 가져오기
     const fetchSignals = async () => {
       try {
         const signals = await getAllSignals();
         setSignalList(signals);
       } catch (error) {
-        console.error('PENDING 시그널 데이터를 가져오는데 실패했습니다:', error);
+        console.error(
+          "PENDING 시그널 데이터를 가져오는데 실패했습니다:",
+          error
+        );
       }
     };
-
-    fetchSignals();
-  }, []);
-
-  // 사용자 데이터 가져오기
-  useEffect(() => {
+    // 사용자 데이터 가져오기
     const fetchUserData = async () => {
       try {
         // AsyncStorage에서 사용자 정보 가져오기
@@ -121,7 +136,7 @@ export default function MapScreen() {
         console.error("사용자 데이터를 가져오는데 실패했습니다:", error);
       }
     };
-
+    fetchSignals();
     fetchUserData();
   }, []);
 
@@ -129,12 +144,15 @@ export default function MapScreen() {
   useEffect(() => {
     const fetchMySignals = async () => {
       if (!userData?.userId) return;
-      
+
       try {
         const mySignals = await getMySignals(userData.userId);
         setMyProgressSignals(mySignals);
       } catch (error) {
-        console.error('내가 응답한 IN_PROGRESS 시그널 데이터를 가져오는데 실패했습니다:', error);
+        console.error(
+          "내가 응답한 IN_PROGRESS 시그널 데이터를 가져오는데 실패했습니다:",
+          error
+        );
       }
     };
 
@@ -145,18 +163,22 @@ export default function MapScreen() {
   useEffect(() => {
     // 두 배열 결합 (중복 제거)
     const combinedSignals = [...signalList];
-    
+
     // myProgressSignals 중 signalList에 없는 항목만 추가
-    myProgressSignals.forEach(mySignal => {
-      const exists = combinedSignals.some(signal => signal.id === mySignal.id);
+    myProgressSignals.forEach((mySignal) => {
+      const exists = combinedSignals.some(
+        (signal) => signal.id === mySignal.id
+      );
       if (!exists) {
         combinedSignals.push(mySignal);
       }
     });
-    
+
     // resolved 상태의 시그널 제외
-    const filteredSignals = combinedSignals.filter(signal => signal.status !== "RESOLVED");
-    
+    const filteredSignals = combinedSignals.filter(
+      (signal) => signal.status !== "RESOLVED"
+    );
+
     setAllSignals(filteredSignals);
   }, [signalList, myProgressSignals]);
 
@@ -167,7 +189,7 @@ export default function MapScreen() {
         ...recommendedRoute,
         travelMode: "WALKING" as google.maps.TravelMode,
       };
-      
+
       const directionsService = new window.google.maps.DirectionsService();
       directionsService.route(directionsRequest, (result, status) => {
         if (status === "OK" && result) {
@@ -178,8 +200,13 @@ export default function MapScreen() {
     }
   }, [recommendedRoute]);
 
+  console.log(recommendedRoute);
+
   // DirectionsService 요청 결과 처리
-  const directionsCallback = (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+  const directionsCallback = (
+    result: google.maps.DirectionsResult | null,
+    status: google.maps.DirectionsStatus
+  ) => {
     if (status === "OK" && result) {
       setDirections(result);
     }
@@ -191,7 +218,7 @@ export default function MapScreen() {
     setModalVisible(true);
   };
 
- // signal 수락 시 상태를 "accepted"로 변경
+  // signal 수락 시 상태를 "accepted"로 변경
   const handleAccept = () => {
     if (!selectedSignal) return;
     setSignalList((prev) =>
@@ -209,62 +236,172 @@ export default function MapScreen() {
 
   // Return icon URL based on signal type
   const getIcon = (categoryId: number) => {
-    const baseUrl = 'https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/';
-  
+    const baseUrl =
+      "https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/";
+
     switch (categoryId) {
-      case 1 : // 'Water Plants / Plant - Related'
+      case 1: // 'Water Plants / Plant - Related'
         return `${baseUrl}category-plant.png`;
-      case 2 : // 'Repair / Tools'
+      case 2: // 'Repair / Tools'
         return `${baseUrl}category-repair.png`;
-      case 3 : // 'Delivery'
+      case 3: // 'Delivery'
         return `${baseUrl}category-delivery.png`;
-      case 4 : // 'Catch the Bug'
+      case 4: // 'Catch the Bug'
         return `${baseUrl}category-bug.png`;
-      case 5 : // 'Translate'
+      case 5: // 'Translate'
         return `${baseUrl}category-translate.png`;
-      case 6 : // 'Pet-Related'
+      case 6: // 'Pet-Related'
         return `${baseUrl}category-pet.png`;
-      case 7 : // 'Lend / Borrow Batteries'
+      case 7: // 'Lend / Borrow Batteries'
         return `${baseUrl}category-battery.png`;
-      case 8 : // 'Lost & Found'
+      case 8: // 'Lost & Found'
         return `${baseUrl}category-find.png`;
-      case 9 : // 'Take picture(s)'
+      case 9: // 'Take picture(s)'
         return `${baseUrl}category-picture.png`;
-      case 10 : // 'etc.'
+      case 10: // 'etc.'
         return `${baseUrl}category-etc.png`;
       default:
         return `${baseUrl}category-default.png`;
     }
-  };  
+  };
 
-  // Define styles for the screen
+  return (
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        {/* 백버튼 */}
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Image source={ArrowIcon} style={{ width: 16, height: 16 }} />
+        </TouchableOpacity>
+
+        {/* Finish Walk 버튼 */}
+        <TouchableOpacity
+          style={styles.finishBtn}
+          onPress={() => {
+            // HACK: finish walk 로직
+          }}
+        >
+          <Text style={styles.finishBtnText}>Finish Walk</Text>
+        </TouchableOpacity>
+
+        {/* HACK: 실제 사용자 아이콘 연결 필요 */}
+        <Image source={UserImage} style={styles.userIcon} />
+      </View>
+
+      {/* Load Google Maps API */}
+      <LoadScript googleMapsApiKey={GOOGLE_API_KEY}>
+        {window.google ? (
+          <>
+            {/* Render Google Map */}
+            <GoogleMap
+              mapContainerStyle={containerStyle}
+              center={mapCenter}
+              zoom={16}
+            >
+              {/* 현재 위치 마커 */}
+              {currentPosition && (
+                <Marker
+                  position={currentPosition}
+                  icon={{
+                    url: "https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/user-location.png",
+                    scaledSize: new window.google.maps.Size(30, 30),
+                  }}
+                />
+              )}
+
+              {/* 모든 신호 마커 (PENDING + IN_PROGRESS) */}
+              {allSignals.map((signal) => (
+                <Marker
+                  key={signal.id}
+                  position={{ lat: signal.lat, lng: signal.lng }}
+                  onClick={() => handleMarkerClick(signal)}
+                  icon={
+                    window.google
+                      ? {
+                          url: getIcon(signal.categoryId),
+                          scaledSize: new window.google.maps.Size(100, 100),
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+
+              {/* DirectionsService: 경로 요청 */}
+              {recommendedRoute ? (
+                <DirectionsService
+                  options={{
+                    ...recommendedRoute,
+                    travelMode: "WALKING" as google.maps.TravelMode,
+                  }}
+                  callback={directionsCallback}
+                />
+              ) : (
+                <DirectionsService
+                  options={MOCK_DIRECTIONS_REQUEST}
+                  callback={directionsCallback}
+                />
+              )}
+
+              {/* DirectionsRenderer: 경로 표시 */}
+              {directions && (
+                <DirectionsRenderer
+                  options={{
+                    directions: directions,
+                    suppressMarkers: true, // 마커는 직접 표시
+                    polylineOptions: {
+                      strokeColor: "#2d6a4f",
+                      strokeWeight: 6,
+                    },
+                  }}
+                />
+              )}
+            </GoogleMap>
+          </>
+        ) : (
+          <Text>Loading Map...</Text>
+        )}
+      </LoadScript>
+    </View>
+  );
+}
+
+// Define styles for the screen
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topBar: {
     width: "100%",
-    height: 56,
+    height: 80,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     backgroundColor: "#fff",
     zIndex: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    borderBottomLeftRadius: -20,
+    borderBottomRightRadius: -20,
+    paddingBottom: 15,
   },
   backBtn: {
     padding: 8,
-    borderRadius: 8,
-  },
-  backBtnText: {
-    fontSize: 24,
-    color: "#222",
+    borderRadius: "50%",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    width: 45,
+    height: 45,
+    alignItems: "center",
+    justifyContent: "center",
   },
   finishBtn: {
-    backgroundColor: "#2d6a4f",
+    backgroundColor: colors.green.main,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   finishBtnText: {
     color: "#fff",
@@ -278,98 +415,3 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
   },
 });
-
-  return (
-  <View style={styles.container}>
-    <View style={styles.topBar}>
-      {/* 백버튼 */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/home")}>
-        <Text style={styles.backBtnText}>{"<"}</Text>
-      </TouchableOpacity>
-
-      {/* Finish Walk 버튼 */}
-      <TouchableOpacity style={styles.finishBtn} onPress={() => {
-        // HACK: finish walk 로직
-      }}>
-        <Text style={styles.finishBtnText}>Finish Walk</Text>
-      </TouchableOpacity>
-
-      {/* HACK: 실제 사용자 아이콘 연결 필요 */}
-      <Image
-        source={require("../assets/images/user-head.png")}
-        style={styles.userIcon}
-      />
-    </View>
-
-    {/* Load Google Maps API */}
-    <LoadScript googleMapsApiKey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string}>
-      {window.google ? (
-        <>
-          {/* Render Google Map */}
-          <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={16}>
-            
-            {/* 현재 위치 마커 */}
-            {currentPosition && (
-              <Marker
-                position={currentPosition}
-                icon={{
-                  url: "https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/user-location.png",
-                  scaledSize: new window.google.maps.Size(30, 30),
-                }}
-              />
-            )}
-
-            {/* 모든 신호 마커 (PENDING + IN_PROGRESS) */}
-            {allSignals.map((signal) => (
-              <Marker
-                key={signal.id}
-                position={{ lat: signal.lat, lng: signal.lng }}
-                onClick={() => handleMarkerClick(signal)}
-                icon={
-                  window.google
-                    ? {
-                        url: getIcon(signal.categoryId),
-                        scaledSize: new window.google.maps.Size(100, 100),
-                      }
-                    : undefined
-                }
-              />
-            ))}
-
-            {/* DirectionsService: 경로 요청 */}
-            {recommendedRoute ? (
-              <DirectionsService
-                options={{
-                  ...recommendedRoute,
-                  travelMode: "WALKING" as google.maps.TravelMode,
-                }}
-                callback={directionsCallback}
-              />
-            ) : (
-              <DirectionsService
-                options={MOCK_DIRECTIONS_REQUEST}
-                callback={directionsCallback}
-              />
-            )}
-
-            {/* DirectionsRenderer: 경로 표시 */}
-            {directions && (
-              <DirectionsRenderer
-                options={{
-                  directions: directions,
-                  suppressMarkers: true, // 마커는 직접 표시
-                  polylineOptions: {
-                    strokeColor: "#2d6a4f",
-                    strokeWeight: 6,
-                  },
-                }}
-              />
-            )}
-          </GoogleMap>
-        </>
-      ) : (
-        <Text>Loading Map...</Text>
-      )}
-    </LoadScript>
-  </View>
-)};
