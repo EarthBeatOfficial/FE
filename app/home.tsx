@@ -3,21 +3,12 @@ import * as Location from "expo-location";
 import React, { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect, useState } from "react";
-import {
-  Image,
-  Keyboard,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  View,
-} from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
 import LoadingModal from "@/components/modals/LoadingModal";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
-import CountdownTimer from "../components/CountdownTimer";
 import GlobalInput from "../components/GlobalInput";
 import InfoTooltip from "../components/InfoTooltip";
 import AutoCompleteModal from "../components/modals/AutoCompleteModal";
@@ -31,7 +22,6 @@ import SignalIcon from "../components/SignalIcon";
 import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
 import TimePicker from "../components/TimePicker";
-import SignalMapModal from "../components/modals/SignalMapModal";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
@@ -91,12 +81,12 @@ export default function HomeScreen() {
 
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
-  const GOOOGLE_API_KEY = "AIzaSyAFdSqMPFP89HZa_bKh4v6GveO_TY4x4VI";
+  const GOOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
   const fetchPlaceSuggestions = async (input: string) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${GOOOGLE_API_KEY}&language=en`
+        `/api/autocomplete?input=${encodeURIComponent(input)}`
       );
       const json = await response.json();
       setPlaceSuggestions(json.predictions);
@@ -275,7 +265,7 @@ export default function HomeScreen() {
     }
   };
 
-  const testing = {
+  const TEST_DATA = {
     id: 3,
     userId: 1,
     categoryId: 5,
@@ -297,6 +287,14 @@ export default function HomeScreen() {
     themeId: 2,
     userId: 26,
   };
+
+  const TEST_SUGGESTIONS = [
+    { place_id: "1", description: "My house" },
+    { place_id: "2", description: "Hee's house" },
+    { place_id: "3", description: "Jeff's house" },
+    { place_id: "4", description: "Minjae's house" },
+    { place_id: "5", description: "Wonyeong's house" },
+  ];
 
   return (
     <View style={styles.container}>
@@ -539,7 +537,7 @@ export default function HomeScreen() {
       {/* <SignalModal
           isAccept
           onClose={() => setShowNotification(false)}
-          data={testing}
+          data={TEST_DATA}
           buttonText={"Accept"}
           onPress={(id) => console.log(id)}
         /> */}
@@ -547,7 +545,7 @@ export default function HomeScreen() {
       {/* <SignalModal
           isAccept={false}
           onClose={() => setShowNotification(false)}
-          data={testing}
+          data={TEST_DATA}
           buttonText={"Mark as Responded"}
           onPress={(id)
            => console.log(id)}
@@ -560,7 +558,7 @@ export default function HomeScreen() {
         /> */}
       {/* testing - Show Signal on Map */}
       {/* <SignalMapModal
-          data={testing}
+          data={TEST_DATA}
           onCancel={(id) => console.log(id)}
           onRespond={(id) => console.log(id)}
         /> */}
