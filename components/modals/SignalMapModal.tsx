@@ -1,21 +1,20 @@
 import { BlurView } from "expo-blur";
 import { useEffect, useState } from "react";
-import { Image, Modal, StyleSheet, View } from "react-native";
+import { Modal, StyleSheet, View } from "react-native";
 
 // other comps
+import CountdownTimer from "../CountdownTimer";
 import GlobalButton from "../GlobalButton";
 import SignalIcon from "../SignalIcon";
 import { ThemedText } from "../ThemedText";
 
 // icons / constants
-import TimeIcon from "@/assets/icons/time.png";
 import { colors } from "../../constants/colors";
 import signalTypes, { SignalType } from "../../constants/signalTypes";
 import walkThemes from "../../constants/walkThemes";
 
 interface SignalMapModalProps {
   themeId?: number;
-  distance?: number;
   onRespond: (signalId: number) => void;
   onCancel: (signalId: number) => void;
   data: {
@@ -24,15 +23,11 @@ interface SignalMapModalProps {
     description: string;
     createdAt: string;
     categoryId: number;
+    expiresAt: string;
   };
 }
 
-const SignalMapModal = ({
-  distance,
-  onRespond,
-  onCancel,
-  data,
-}: SignalMapModalProps) => {
+const SignalMapModal = ({ onRespond, onCancel, data }: SignalMapModalProps) => {
   const [theme, setTheme] = useState(walkThemes[0]);
   const [signalType, setSignalType] = useState<SignalType>(signalTypes[0]);
   const [approxTime, setApproxTime] = useState("");
@@ -75,11 +70,10 @@ const SignalMapModal = ({
                 >
                   {data?.title}
                 </ThemedText>
-                <View style={styles.locationBox}>
-                  <Image source={TimeIcon} style={{ width: 20, height: 20 }} />
-                  <ThemedText style={styles.grayText}></ThemedText>
-                  <ThemedText style={styles.grayText}>remaining</ThemedText>
-                </View>
+                <CountdownTimer
+                  createdAt={data?.createdAt.slice(0, -5)}
+                  expiresAt={data?.expiresAt.slice(0, -5)}
+                />
               </View>
               <SignalIcon
                 signal={signalType}

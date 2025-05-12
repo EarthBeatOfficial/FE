@@ -7,6 +7,7 @@ import SignalIcon from "../SignalIcon";
 import { ThemedText } from "../ThemedText";
 import BottomSheetModal from "./BottomSheetModal";
 import ModalSection from "./ModalSection";
+import CountdownTimer from "../CountdownTimer";
 
 // icon / constants
 import TimeIcon from "@/assets/icons/time.png";
@@ -23,6 +24,7 @@ interface SignalModalProps {
     description: string;
     createdAt: string;
     categoryId: number;
+    expiresAt: string;
   };
   buttonText: string;
   isAccept: boolean;
@@ -77,11 +79,10 @@ const SignalModal = ({
             {data?.title}
           </ThemedText>
           {isAccept && (
-            <View style={styles.flexBox}>
-              <Image source={TimeIcon} style={{ width: 20, height: 20 }} />
-              <ThemedText style={styles.grayText}></ThemedText>
-              <ThemedText style={styles.grayText}>remaining</ThemedText>
-            </View>
+            <CountdownTimer
+              createdAt={data?.createdAt.slice(0, -5)}
+              expiresAt={data?.expiresAt.slice(0, -5)}
+            />
           )}
         </View>
         <ModalSection>
