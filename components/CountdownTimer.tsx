@@ -1,34 +1,50 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { colors } from "../constants/colors";
+import { Image, StyleSheet, View } from "react-native";
 import { ThemedText } from "./ThemedText";
 
+// icons / constants
+import ExpiredTimeIcon from "@/assets/icons/expiredTime.png";
+import TimeIcon from "@/assets/icons/time.png";
+import { colors } from "../constants/colors";
+
 interface CountdownTimerProps {
-  timeLimit: number; // in minutes
-  startTime: Date;
+  createdAt: Date | string;
+  expiresAt: Date | string;
   onTimeUp?: () => void;
 }
 
 const CountdownTimer: React.FC<CountdownTimerProps> = ({
-  timeLimit,
-  startTime,
+  createdAt,
+  expiresAt,
   onTimeUp,
 }) => {
-  const [timeLeft, setTimeLeft] = useState<number>(timeLimit * 60); // convert to seconds
+  // Parse dates if they are strings
+  const created =
+    typeof createdAt === "string" ? new Date(createdAt) : createdAt;
+  const expires =
+    typeof expiresAt === "string" ? new Date(expiresAt) : expiresAt;
+
+  const getInitialTimeLeft = () => {
+    const now = new Date();
+    return Math.max(
+      0,
+      Math.floor((expires.getTime() - created.getTime()) / 1000)
+    );
+  };
+
+  const [timeLeft, setTimeLeft] = useState<number>(getInitialTimeLeft());
 
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date();
-      const elapsedSeconds = Math.floor(
-        (now.getTime() - startTime.getTime()) / 1000
+      const remainingSeconds = Math.floor(
+        (expires.getTime() - now.getTime()) / 1000
       );
-      const remainingSeconds = timeLimit * 60 - elapsedSeconds;
 
       if (remainingSeconds <= 0) {
         onTimeUp?.();
         return 0;
       }
-
       return remainingSeconds;
     };
 
@@ -46,7 +62,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLimit, startTime, onTimeUp]);
+  }, [createdAt, expiresAt, onTimeUp]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -61,13 +77,17 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
 
   return (
     <View style={styles.container}>
+      <Image
+        source={timeLeft <= 300 ? ExpiredTimeIcon : TimeIcon}
+        style={{ width: 20, height: 20 }}
+      />
       <ThemedText
         style={[
           styles.timer,
           timeLeft <= 300 && styles.warning, // Red color when less than 5 minutes left
         ]}
       >
-        {formatTime(timeLeft)}
+        {formatTime(timeLeft)} remaining
       </ThemedText>
     </View>
   );
@@ -75,13 +95,13 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 5,
   },
   timer: {
     fontSize: 16,
     color: colors.darkGray.main,
-    fontFamily: "Poppins_600SemiBold",
   },
   warning: {
     color: colors.red.main,

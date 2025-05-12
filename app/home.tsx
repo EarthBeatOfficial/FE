@@ -12,23 +12,26 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import styled from "styled-components/native";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
+import LoadingModal from "@/components/modals/LoadingModal";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
-import AutoCompleteModal from "../components/AutoCompleteModal";
-import BottomSheetModal from "../components/BottomSheetModal";
 import CountdownTimer from "../components/CountdownTimer";
 import GlobalInput from "../components/GlobalInput";
 import InfoTooltip from "../components/InfoTooltip";
-import ModalSection from "../components/ModalSection";
+import AutoCompleteModal from "../components/modals/AutoCompleteModal";
+import BottomSheetModal from "../components/modals/BottomSheetModal";
+import ConfirmModal from "../components/modals/ConfirmModal";
+import ModalSection from "../components/modals/ModalSection";
+import NotificationModal from "../components/modals/NotificationModal";
 import NameCard from "../components/NameCard";
 import Selector from "../components/Selector";
 import SignalIcon from "../components/SignalIcon";
 import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
 import TimePicker from "../components/TimePicker";
+import SignalMapModal from "../components/modals/SignalMapModal";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
@@ -40,14 +43,18 @@ import signalTypes from "../constants/signalTypes";
 import MainHelpIcon from "@/assets/icons/main-help.png";
 import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
-import SuccessIcon from "@/assets/images/success-hands.png";
 
-// API / redux
-import { createSignal } from "@/api/signalApi";
-import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
+// Redux
 import { setRecommendedRoute } from "@/redux/routeSlice";
 import { useDispatch } from "react-redux";
-import { recommendRoute } from "../api/routesApi";
+
+// API
+import { getResponses, markResponseAsRead } from "@/api/responsesApi";
+import { recommendRoute } from "@/api/routesApi";
+import { createSignal } from "@/api/signalApi";
+import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
+
+// for testing
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -64,9 +71,11 @@ export default function HomeScreen() {
     themeId: null,
     location: "",
   });
-  const [responseData, setResponseData] = useState({ message: "", title: "" });
+  const [responseData, setResponseData] = useState<
+    [{ message: string; id: number; signal: { title: string } }]
+  >([{ message: "", id: 0, signal: { title: "" } }]);
   const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(true);
+  const [showNotification, setShowNotification] = useState(false);
   const [signalData, setSignalData] = useState({
     title: "",
     description: "",
@@ -75,11 +84,13 @@ export default function HomeScreen() {
     timeLimit: 10, // default 10 minutes
     categoryId: null,
   });
-  const [route, setRoute] = useState();
   const [isPanEnabled, setIsPanEnabled] = useState(true);
   const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
   const [placeSuggestions, setPlaceSuggestions] = useState([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const today = moment().format("MMMM Do");
+  const day = moment().format("dddd");
   const GOOOGLE_API_KEY = "AIzaSyAFdSqMPFP89HZa_bKh4v6GveO_TY4x4VI";
 
   const fetchPlaceSuggestions = async (input: string) => {
@@ -118,8 +129,6 @@ export default function HomeScreen() {
     }
   };
 
-  console.log("signal", signalData);
-
   const handleSelect = async (placeId: string) => {
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOOGLE_API_KEY}`
@@ -145,14 +154,13 @@ export default function HomeScreen() {
     handleSignalData(minutes, "timeLimit");
   };
 
-  const handleSignalSubmit = async () => {
+  const generateSignal = async () => {
     try {
       const response = await createSignal({
         ...signalData,
         userId: userData?.userId,
       });
       // store in redux?
-      console.log(response);
 
       // Set the start time when the signal is created
       setSignalStartTime(new Date());
@@ -161,10 +169,13 @@ export default function HomeScreen() {
       setShowAddSignal(false);
     } catch (error) {
       console.error("Error creating signal:", error);
+    } finally {
+      setShowConfirmModal(true);
     }
   };
 
   const generateWalkTrail = async () => {
+    setIsLoading(true);
     try {
       const resp = await recommendRoute({
         userId: userData?.userId,
@@ -172,10 +183,13 @@ export default function HomeScreen() {
         themeId: trailData?.themeId,
         distance: trailData?.distance,
       });
+      // Store trailData in redux to use it in a modal in map.tsx
       dispatch(setRecommendedRoute(resp));
-      router.push("/map");
     } catch (error: any) {
       console.log("Error generating a route recommendation", error);
+    } finally {
+      setIsLoading(false);
+      router.push("/map");
     }
 
     if (trailData?.location) {
@@ -183,9 +197,6 @@ export default function HomeScreen() {
       // ADD could not generate UI
     }
   };
-
-  const today = moment().format("MMMM Do");
-  const day = moment().format("dddd");
 
   useEffect(() => {
     async function fetchUserData() {
@@ -222,7 +233,7 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    const fetchWalkLongData = async () => {
+    async function fetchWalkLogData() {
       if (userData && userData?.userId) {
         try {
           const numWalkLogs = await getWalkLogNum(userData?.userId);
@@ -233,9 +244,59 @@ export default function HomeScreen() {
           console.error("Error fetching walk log data:", error);
         }
       }
-    };
-    fetchWalkLongData();
+    }
+    async function fetchResponseData() {
+      if (userData && userData?.userId) {
+        try {
+          const respData = await getResponses(userData?.userId);
+          if (respData) {
+            setResponseData(respData);
+            if (respData.length > 0) {
+              setShowNotification(true);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching response data:", error);
+        }
+      }
+    }
+    fetchWalkLogData();
+    fetchResponseData();
   }, [userData]);
+
+  const markAsRead = async (responseId: number) => {
+    try {
+      const data = await markResponseAsRead({ responseId: responseId });
+      console.log(data);
+    } catch (error) {
+      console.log("Error marking response as read", error);
+    } finally {
+      //   setShowNotification(false);
+    }
+  };
+
+  const testing = {
+    id: 3,
+    userId: 1,
+    categoryId: 5,
+    title: "Help needed with recycling",
+    description: "Need help sorting recyclables at the community center",
+    lat: 37.5665,
+    lng: 126.978,
+    createdAt: "2025-05-12T21:12:04.142Z",
+    timeLimit: 30,
+    status: "IN_PROGRESS",
+    selectedUserId: 5,
+    expiresAt: "2025-05-12T21:42:04.142Z",
+  };
+
+  const testingRoute = {
+    distance: 1.5,
+    location:
+      '{"latitude": 37.585217458447744, "longitude": 127.02856845626475}',
+    themeId: 2,
+    userId: 26,
+  };
 
   return (
     // <KeyboardAvoidingView
@@ -248,7 +309,12 @@ export default function HomeScreen() {
         <View style={styles.container}>
           <ParallaxScrollView>
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingTop: 10,
+              }}
             >
               <Image
                 source={LogoImage}
@@ -348,7 +414,7 @@ export default function HomeScreen() {
           isHeader
           headerTitle="Help Signal"
           isPanEnabled={isPanEnabled}
-          onPressAction={handleSignalSubmit}
+          onPressAction={generateSignal}
           disabled={
             !signalData.categoryId &&
             !signalData.description &&
@@ -433,8 +499,8 @@ export default function HomeScreen() {
         </BottomSheetModal>
 
         {/* ------------- Add Signal Button -------------- */}
-        {!showAddSignal && !showSuccessModal && (
-          <ButtonBox>
+        {!showAddSignal && !showNotification && !showConfirmModal && (
+          <View style={styles.buttonBox}>
             <Pressable
               onPress={() => setShowAddSignal(true)}
               style={styles.helpButton}
@@ -444,68 +510,73 @@ export default function HomeScreen() {
                 style={{ width: 56, height: 56, resizeMode: "contain" }}
               />
             </Pressable>
-          </ButtonBox>
+          </View>
         )}
 
         {/* ------------- Popup for when someone completes a signal -------------- */}
-        <BottomSheetModal
-          isVisible={showSuccessModal}
-          onClose={() => setShowSuccessModal(false)}
-          height={550}
-          isButton
-        >
-          <View
-            style={{
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 15,
-            }}
-          >
-            <Image source={SuccessIcon} style={{ width: 200, height: 200 }} />
-            <ThemedText style={{ textAlign: "center", fontSize: 16 }}>
-              A helpful responder{"\n"}
-              just completed your signal
-            </ThemedText>
-            <ThemedText
-              type="semiBold"
-              style={{ color: colors.green.main, fontSize: 25 }}
-            >
-              {responseData?.title}
-            </ThemedText>
-            <View style={styles.messageBox}>
-              <ThemedText style={styles.message}>
-                Message from responder:
-              </ThemedText>
-              <ThemedText style={styles.message}>
-                {responseData?.message}
-                hello
-              </ThemedText>
-            </View>
-          </View>
-        </BottomSheetModal>
+        <NotificationModal
+          isVisible={showNotification}
+          onClose={() => setShowNotification(false)}
+          responseData={responseData}
+          onButtonPress={markAsRead}
+        />
 
-        {signalStartTime && (
+        {/* {signalStartTime && (
           <CountdownTimer
-            timeLimit={signalData.timeLimit}
+            // timeLimit={signalData.timeLimit}
             startTime={signalStartTime}
             onTimeUp={() => {
               // Handle when time is up
               console.log("Time limit reached!");
             }}
           />
+        )} */}
+
+        {isLoading && (
+          <LoadingModal
+            message={`Generating a walk trail based on your selection...`}
+          />
         )}
+        <ConfirmModal
+          signalTitle={signalData?.title}
+          isVisible={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+        />
+
+        {/* testing - Accept*/}
+        {/* <SignalModal
+          isAccept
+          onClose={() => setShowNotification(false)}
+          data={testing}
+          buttonText={"Accept"}
+          onPress={(id) => console.log(id)}
+        /> */}
+        {/* testing - Mark as responded*/}
+        {/* <SignalModal
+          isAccept={false}
+          onClose={() => setShowNotification(false)}
+          data={testing}
+          buttonText={"Mark as Responded"}
+          onPress={(id)
+           => console.log(id)}
+        /> */}
+        {/* testing - Take Route */}
+        {/* <RouteModal
+          themeId={testingRoute?.themeId}
+          distance={testingRoute?.distance}
+          onPress={() => console.log("clicked")}
+        /> */}
+        {/* testing - Show Signal on Map */}
+        {/* <SignalMapModal
+          data={testing}
+          onCancel={(id) => console.log(id)}
+          onRespond={(id) => console.log(id)}
+        /> */}
       </View>
     </TouchableWithoutFeedback>
     // </KeyboardAvoidingView>
   );
 }
-
-const ButtonBox = styled.View`
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  z-index: 1000;
-`;
 
 const styles = StyleSheet.create({
   container: {
@@ -575,5 +646,11 @@ const styles = StyleSheet.create({
   message: {
     color: colors.darkGray.main,
     fontSize: 16,
+  },
+  buttonBox: {
+    position: "absolute",
+    bottom: 15,
+    right: 15,
+    zIndex: 1000,
   },
 });
