@@ -81,7 +81,7 @@ export default function HomeScreen() {
 
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
-  const GOOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+  const GOOOGLE_API_KEY = "AIzaSyAFdSqMPFP89HZa_bKh4v6GveO_TY4x4VI";
 
   const fetchPlaceSuggestions = async (input: string) => {
     try {
@@ -406,12 +406,11 @@ export default function HomeScreen() {
         isPanEnabled={isPanEnabled}
         onPressAction={generateSignal}
         disabled={
-          !signalData.categoryId &&
-          !signalData.description &&
-          !signalData.lat &&
-          !signalData.lng &&
-          !signalData.timeLimit &&
-          !signalData.title
+          signalData.title === "" ||
+          signalData.description === "" ||
+          !signalData.lat ||
+          !signalData.lng ||
+          !signalData.categoryId
         }
       >
         <ModalSection style={{ marginBottom: 16 }}>
