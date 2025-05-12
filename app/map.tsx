@@ -1,11 +1,12 @@
 import { DirectionsRenderer, DirectionsService, GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
 
-import { getAllSignals } from "../api/signalApi";
+import { getAllSignals, getMySignals } from "../api/signalApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -17,58 +18,20 @@ import { getAllSignals } from "../api/signalApi";
 
 interface Signal {
   id: number;
-  type: string;
+  userId: number;
+  categoryId: number;
   title: string;
   description: string;
-  latitude: number;
-  longitude: number;
-  status: "waiting" | "accepted" | "resolved";
-  resolveMessage?: string; // HACK : 수정 필요
+  lat: number;
+  lng: number;
+  createdAt: string;
+  timeLimit: number;
+  status: string;
+  selectedUserId: number;
+  expiresAt: string;
 }
 
-// API 응답 데이터 타입
-interface RawSignal {
-  id: number;
-  type: string;
-  title: string;
-  description: string;
-  latitude: string;
-  longitude: string;
-  status: "waiting" | "accepted" | "resolved";
-  resolveMessage?: string;
-}
-
-// Dummy signal data for testing
-// const signals: Signal[] = [
-//   {
-//     id: 1,
-//     type: "plant",
-//     title: "Please help water my plant!",
-//     description: "기숙사 방 안의 식물에 물을 주세요.",
-//     latitude: 37.5902,
-//     longitude: 127.0331,
-//     status: "waiting",
-//   },
-//   {
-//     id: 2,
-//     type: "pet",
-//     title: "산책을 못 나가요",
-//     description: "강아지 산책 부탁드립니다. 정문 근처에 있어요.",
-//     latitude: 37.5887,
-//     longitude: 127.0318,
-//     status: "waiting",
-//   },
-//   {
-//     id: 3,
-//     type: "delivery",
-//     title: "문 앞에 음식 좀 가져다 주세요",
-//     description: "서관 건물 앞에 음식이 도착했어요.",
-//     latitude: 37.5898,
-//     longitude: 127.0342,
-//     status: "waiting",
-//   },
-// ];
-
+// 기본 경로 설정 (추후 Redux에서 데이터가 없을 경우 사용)
 const MOCK_DIRECTIONS_REQUEST = {
   origin: { lat: 37.544582, lng: 127.037589 },
   destination: { lat: 37.58000, lng: 127.035589 },
@@ -89,15 +52,21 @@ export default function MapScreen() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null); // 선택된 signal
   const [modalVisible, setModalVisible] = useState<boolean>(false);         // 모달 창 표시 여부
   const [signalList, setSignalList] = useState<Signal[]>([]);          // 현재 signal 리스트 상태
+  const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
+  const [allSignals, setAllSignals] = useState<Signal[]>([]); // 모든 시그널을 합친 리스트
   
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 37.544582, lng: 127.037589 });
+  const [userData, setUserData] = useState<{
+      userId: number;
+      nickname: string;
+    } | null>(null);
 
   const router = useRouter();
    // call the recommended route through redux
   const recommendedRoute = useSelector(
-    (state: RootState) => state.route.recommendedRoute
+    (state: RootState) => state.route?.recommendedRoute
   );
 
   // 현재 위치 추적
@@ -124,25 +93,72 @@ export default function MapScreen() {
     }
   }, []);
 
-  // 시그널 데이터 가져오기
+  // PENDING 시그널 데이터 가져오기
   useEffect(() => {
     const fetchSignals = async () => {
       try {
         const signals = await getAllSignals();
-        // RawSignal을 Signal로 변환
-        const parsedSignals = signals.map((signal: RawSignal): Signal => ({
-          ...signal,
-          latitude: parseFloat(signal.latitude),
-          longitude: parseFloat(signal.longitude)
-        }));
-        setSignalList(parsedSignals);
+        setSignalList(signals);
       } catch (error) {
-        console.error('시그널 데이터를 가져오는데 실패했습니다:', error);
+        console.error('PENDING 시그널 데이터를 가져오는데 실패했습니다:', error);
       }
     };
 
     fetchSignals();
   }, []);
+
+  // 사용자 데이터 가져오기
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // AsyncStorage에서 사용자 정보 가져오기
+        const storedData = await AsyncStorage.getItem("userData");
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          setUserData(parsedData);
+        }
+      } catch (error) {
+        console.error("사용자 데이터를 가져오는데 실패했습니다:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // 내가 응답한 IN_PROGRESS 시그널 데이터 가져오기
+  useEffect(() => {
+    const fetchMySignals = async () => {
+      if (!userData?.userId) return;
+      
+      try {
+        const mySignals = await getMySignals(userData.userId);
+        setMyProgressSignals(mySignals);
+      } catch (error) {
+        console.error('내가 응답한 IN_PROGRESS 시그널 데이터를 가져오는데 실패했습니다:', error);
+      }
+    };
+
+    fetchMySignals();
+  }, [userData]);
+
+  // signalList와 myProgressSignals가 변경될 때마다 모든 시그널 목록 업데이트
+  useEffect(() => {
+    // 두 배열 결합 (중복 제거)
+    const combinedSignals = [...signalList];
+    
+    // myProgressSignals 중 signalList에 없는 항목만 추가
+    myProgressSignals.forEach(mySignal => {
+      const exists = combinedSignals.some(signal => signal.id === mySignal.id);
+      if (!exists) {
+        combinedSignals.push(mySignal);
+      }
+    });
+    
+    // resolved 상태의 시그널 제외
+    const filteredSignals = combinedSignals.filter(signal => signal.status !== "RESOLVED");
+    
+    setAllSignals(filteredSignals);
+  }, [signalList, myProgressSignals]);
 
   // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
   useEffect(() => {
@@ -180,21 +196,7 @@ export default function MapScreen() {
     if (!selectedSignal) return;
     setSignalList((prev) =>
       prev.map((s) =>
-        s.id === selectedSignal.id ? { ...s, status: "accepted" } : s
-      )
-    );
-    setModalVisible(false);
-  };
-
-  // HACK : resolved icon 표현 방법 결정 후 수정 필요
-  // 해결 메시지를 포함해 signal 상태를 "resolved"로 변경
-  const handleResolve = (message: string) => {
-    if (!selectedSignal) return;
-    setSignalList((prev) =>
-      prev.map((s) =>
-        s.id === selectedSignal.id
-          ? { ...s, status: "resolved", resolveMessage: message }
-          : s
+        s.id === selectedSignal.id ? { ...s, status: "IN_PROGRESS" } : s
       )
     );
     setModalVisible(false);
@@ -206,30 +208,30 @@ export default function MapScreen() {
   };
 
   // Return icon URL based on signal type
-  const getIcon = (type: string) => {
+  const getIcon = (categoryId: number) => {
     const baseUrl = 'https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/';
   
-    switch (type) {
-      case 'pet':
-        return `${baseUrl}category-pet.png`;
-      case 'plant':
+    switch (categoryId) {
+      case 1 : // 'Water Plants / Plant - Related'
         return `${baseUrl}category-plant.png`;
-      case 'battery':
-        return `${baseUrl}category-battery.png`;
-      case 'bug':
-        return `${baseUrl}category-bug.png`;
-      case 'delivery':
-        return `${baseUrl}category-delivery.png`;
-      case 'etc':
-        return `${baseUrl}category-etc.png`;
-      case 'find':
-        return `${baseUrl}category-find.png`;
-      case 'picture':
-        return `${baseUrl}category-picture.png`;
-      case 'repair':
+      case 2 : // 'Repair / Tools'
         return `${baseUrl}category-repair.png`;
-      case 'translate':
+      case 3 : // 'Delivery'
+        return `${baseUrl}category-delivery.png`;
+      case 4 : // 'Catch the Bug'
+        return `${baseUrl}category-bug.png`;
+      case 5 : // 'Translate'
         return `${baseUrl}category-translate.png`;
+      case 6 : // 'Pet-Related'
+        return `${baseUrl}category-pet.png`;
+      case 7 : // 'Lend / Borrow Batteries'
+        return `${baseUrl}category-battery.png`;
+      case 8 : // 'Lost & Found'
+        return `${baseUrl}category-find.png`;
+      case 9 : // 'Take picture(s)'
+        return `${baseUrl}category-picture.png`;
+      case 10 : // 'etc.'
+        return `${baseUrl}category-etc.png`;
       default:
         return `${baseUrl}category-default.png`;
     }
@@ -317,16 +319,16 @@ const styles = StyleSheet.create({
               />
             )}
 
-            {/* 신호 마커 */}
-            {signalList.map((signal) => (
+            {/* 모든 신호 마커 (PENDING + IN_PROGRESS) */}
+            {allSignals.map((signal) => (
               <Marker
                 key={signal.id}
-                position={{ lat: signal.latitude, lng: signal.longitude }}
+                position={{ lat: signal.lat, lng: signal.lng }}
                 onClick={() => handleMarkerClick(signal)}
                 icon={
                   window.google
                     ? {
-                        url: getIcon(signal.type),
+                        url: getIcon(signal.categoryId),
                         scaledSize: new window.google.maps.Size(100, 100),
                       }
                     : undefined
@@ -335,10 +337,20 @@ const styles = StyleSheet.create({
             ))}
 
             {/* DirectionsService: 경로 요청 */}
-            <DirectionsService
-              options={MOCK_DIRECTIONS_REQUEST}
-              callback={directionsCallback}
-            />
+            {recommendedRoute ? (
+              <DirectionsService
+                options={{
+                  ...recommendedRoute,
+                  travelMode: "WALKING" as google.maps.TravelMode,
+                }}
+                callback={directionsCallback}
+              />
+            ) : (
+              <DirectionsService
+                options={MOCK_DIRECTIONS_REQUEST}
+                callback={directionsCallback}
+              />
+            )}
 
             {/* DirectionsRenderer: 경로 표시 */}
             {directions && (
