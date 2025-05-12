@@ -54,8 +54,6 @@ import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 // for testing
-import RouteModal from "../components/modals/RouteModal";
-import SignalMapModal from "../components/modals/SignalMapModal";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -184,6 +182,7 @@ export default function HomeScreen() {
         themeId: trailData?.themeId,
         distance: trailData?.distance,
       });
+      // Store trailData in redux to use it in a modal in map.tsx
       dispatch(setRecommendedRoute(resp));
     } catch (error: any) {
       console.log("Error generating a route recommendation", error);
