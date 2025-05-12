@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 
-import TimeIcon from "@/assets/icons/time.png";
-import { colors } from "../../constants/colors";
-import signalTypes, { SignalType } from "../../constants/signalTypes";
 import GlobalButton from "../GlobalButton";
 import GlobalInput from "../GlobalInput";
 import SignalIcon from "../SignalIcon";
 import { ThemedText } from "../ThemedText";
 import BottomSheetModal from "./BottomSheetModal";
 import ModalSection from "./ModalSection";
+
+// icon / constants
+import TimeIcon from "@/assets/icons/time.png";
+import { colors } from "../../constants/colors";
+import signalTypes, { SignalType } from "../../constants/signalTypes";
 
 interface SignalModalProps {
   countdown?: any;

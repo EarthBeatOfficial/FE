@@ -55,6 +55,7 @@ import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 // for testing
 import RouteModal from "../components/modals/RouteModal";
+import SignalMapModal from "../components/modals/SignalMapModal";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -560,11 +561,13 @@ export default function HomeScreen() {
            => console.log(id)}
         /> */}
         {/* testing - Take Route */}
-        <RouteModal
+        {/* <RouteModal
           themeId={testingRoute?.themeId}
           distance={testingRoute?.distance}
           onPress={() => console.log("clicked")}
-        />
+        /> */}
+        {/* testing - Show Signal on Map */}
+        <SignalMapModal data={testing} />
       </View>
     </TouchableWithoutFeedback>
     // </KeyboardAvoidingView>
