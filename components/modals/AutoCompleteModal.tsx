@@ -1,19 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Keyboard,
-  KeyboardAvoidingView,
+  Image,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { colors } from "../../constants/colors";
+import GlobalInput from "../GlobalInput";
 import { ThemedText } from "../ThemedText";
+
+// icons
+import WarningImage from "@/assets/images/warning.png";
+import GlobalButton from "../GlobalButton";
 
 interface AutoCompleteModalProps {
   fetchSuggestions: (input: string) => void;
@@ -56,86 +57,67 @@ const AutoCompleteModal: React.FC<AutoCompleteModalProps> = ({
 
   return (
     <>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ width: "100%" }}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder="Address"
-                value={input}
-                onChangeText={handleInputChange}
-                onSubmitEditing={handleSubmit}
-                returnKeyType="search"
-                clearButtonMode="never"
-              />
-              {input.length > 0 && (
-                <TouchableOpacity
-                  onPress={handleClear}
-                  style={styles.clearButton}
-                >
-                  <Ionicons name="close-circle" size={20} color="#aaa" />
-                </TouchableOpacity>
-              )}
-            </View>
-            <View>
-              {/* {showSuggestions && suggestions && (
-              <FlatList
-              data={suggestions}
-              keyboardShouldPersistTaps="handled"
-              keyExtractor={(item) => item.place_id}
-              style={styles.suggestionList}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                onPress={() => handleSelect(item)}
-                style={[
-                    styles.suggestionItem,
-                    item.place_id === selectedId && styles.selectedSuggestion,
-                    ]}
-                    >
-                    <Text
-                    style={{
-                        color: item.place_id === selectedId ? "#fff" : "#222",
-                        }}
-                        >
-                        {item.description}
-                        </Text>
-                        </TouchableOpacity>
-                        )}
-                        />
-                        )} */}
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+      <View>
+        <View style={styles.inputWrapper}>
+          <GlobalInput
+            placeholder="Address"
+            value={input}
+            onChangeText={handleInputChange}
+            onSubmitEditing={handleSubmit}
+            returnKeyType="search"
+            clearButtonMode="never"
+          />
+          {input.length > 0 && (
+            <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#aaa" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <View></View>
+      </View>
+
       <Modal visible={showSuggestions} transparent animationType="slide">
         <TouchableOpacity
           style={styles.overlay}
           onPress={() => setShowSuggestions(false)}
         >
           <View style={styles.pickerContainer}>
-            <View style={styles.suggestionList}>
-              <ScrollView>
-                {suggestions?.map((item, key) => {
-                  return (
-                    <TouchableOpacity
-                      key={key}
-                      onPress={() => handleSelect(item)}
-                      style={[
-                        styles.suggestionItem,
-                        item.place_id === selectedId &&
-                          styles.selectedSuggestion,
-                      ]}
-                    >
-                      <ThemedText>{item.description}</ThemedText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+            {suggestions?.length > 0 ? (
+              <View style={styles.suggestionList}>
+                <ScrollView>
+                  {suggestions.map((item, key) => {
+                    return (
+                      <TouchableOpacity
+                        key={key}
+                        onPress={() => handleSelect(item)}
+                        style={[
+                          styles.suggestionItem,
+                          item.place_id === selectedId &&
+                            styles.selectedSuggestion,
+                        ]}
+                      >
+                        <ThemedText>{item.description}</ThemedText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Image
+                  source={WarningImage}
+                  style={{ width: 120, height: 120 }}
+                />
+                <ThemedText>
+                  There are no matching places to display.
+                </ThemedText>
+                <GlobalButton
+                  text="Try again"
+                  color={colors.red.main}
+                  onPress={() => setShowSuggestions(false)}
+                />
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -154,8 +136,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    fontSize: 18,
+    fontSize: 16,
     paddingRight: 36,
+    color: "#AFAFAF",
+    fontFamily: "Poppins_400Regular",
   },
   clearButton: {
     position: "absolute",
@@ -190,6 +174,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
+    width: "100%",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    width: "100%",
+    flex: 1,
   },
 });
 

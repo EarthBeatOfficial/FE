@@ -1,6 +1,6 @@
-import { Picker } from "@react-native-picker/picker";
 import React, { useState } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
 
 // nested comps
 import GlobalButton from "./GlobalButton";
@@ -14,8 +14,15 @@ interface TimePickerProps {
   onOpen: () => void;
 }
 
-const hours = Array.from({ length: 24 }, (_, i) => i);
-const minutes = Array.from({ length: 6 }, (_, i) => i * 10);
+const hours = Array.from({ length: 24 }, (_, i) => ({
+  label: `${i}h`,
+  value: i,
+}));
+
+const minutes = Array.from({ length: 6 }, (_, i) => ({
+  label: `${i * 10}m`,
+  value: i * 10,
+}));
 
 const TimePicker: React.FC<TimePickerProps> = ({
   onTimeSelect,
@@ -28,23 +35,16 @@ const TimePicker: React.FC<TimePickerProps> = ({
   );
   const [selectedMinute, setSelectedMinute] = useState(initialTime % 60);
 
+  // Dropdown states
+  const [hourOpen, setHourOpen] = useState(false);
+  const [minuteOpen, setMinuteOpen] = useState(false);
+
   const handleConfirm = () => {
     setShow(false);
     onOpen();
     const totalMinutes = selectedHour * 60 + selectedMinute;
     onTimeSelect?.(totalMinutes);
   };
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
-  };
-
-  //   useEffect(() => {
-  //     setSelectedHour(Math.floor(initialTime / 60));
-  //     setSelectedMinute(initialTime % 60);
-  //   }, [!show]);
 
   return (
     <>
@@ -57,7 +57,6 @@ const TimePicker: React.FC<TimePickerProps> = ({
           style={styles.timeButton}
         >
           <ThemedText style={styles.timeText}>
-            {/* {formatTime(selectedHour * 60 + selectedMinute)} */}
             {selectedHour.toString().padStart(2, "0")}h{" "}
             {selectedMinute.toString().padStart(2, "0")}min
           </ThemedText>
@@ -67,34 +66,34 @@ const TimePicker: React.FC<TimePickerProps> = ({
         <View style={styles.overlay}>
           <View style={styles.pickerContainer}>
             <View style={styles.pickerRow}>
-              <Picker
-                selectedValue={selectedHour}
-                style={styles.picker}
-                onValueChange={setSelectedHour}
-              >
-                {hours.map((h) => (
-                  <Picker.Item
-                    key={h}
-                    label={`${h}h`}
-                    value={h}
-                    style={{ flex: 1, color: colors.darkGray.main }}
-                  />
-                ))}
-              </Picker>
-              <Picker
-                selectedValue={selectedMinute}
-                style={styles.picker}
-                onValueChange={setSelectedMinute}
-              >
-                {minutes.map((m) => (
-                  <Picker.Item
-                    key={m}
-                    label={`${m}m`}
-                    value={m}
-                    style={styles.pickerItem}
-                  />
-                ))}
-              </Picker>
+              <View style={styles.dropdownContainer}>
+                <DropDownPicker
+                  open={hourOpen}
+                  value={selectedHour}
+                  items={hours}
+                  setOpen={setHourOpen}
+                  setValue={setSelectedHour}
+                  style={styles.dropdown}
+                  textStyle={styles.dropdownText}
+                  dropDownContainerStyle={styles.dropdownList}
+                  zIndex={3000}
+                  zIndexInverse={1000}
+                />
+              </View>
+              <View style={styles.dropdownContainer}>
+                <DropDownPicker
+                  open={minuteOpen}
+                  value={selectedMinute}
+                  items={minutes}
+                  setOpen={setMinuteOpen}
+                  setValue={setSelectedMinute}
+                  style={styles.dropdown}
+                  textStyle={styles.dropdownText}
+                  dropDownContainerStyle={styles.dropdownList}
+                  zIndex={2000}
+                  zIndexInverse={2000}
+                />
+              </View>
             </View>
             <GlobalButton text="Confirm" onPress={handleConfirm} />
           </View>
@@ -138,13 +137,24 @@ const styles = StyleSheet.create({
   pickerRow: {
     flexDirection: "row",
     justifyContent: "center",
+    gap: 10,
+    marginBottom: 20,
   },
-  picker: {
+  dropdownContainer: {
     flex: 1,
-    color: colors.darkGray.main,
+    minHeight: 50,
   },
-  pickerItem: {
+  dropdown: {
+    borderColor: colors.darkGray.light,
+    backgroundColor: colors.light.background,
+  },
+  dropdownText: {
     color: colors.darkGray.main,
+    fontSize: 16,
+  },
+  dropdownList: {
+    borderColor: colors.darkGray.light,
+    backgroundColor: colors.light.background,
   },
 });
 

@@ -26,6 +26,11 @@ export default function NicknameScreen() {
 
   const handleContinue = async () => {
     if (!nickname.trim()) return;
+    if (nickname?.length > 10) {
+      setErrorState(true);
+      setErrorMessage("Nickname must not exceed 10 characters.");
+      return;
+    }
 
     setIsLoading(true);
     setErrorState(false);
@@ -109,7 +114,7 @@ export default function NicknameScreen() {
                   fontSize: 18,
                 }}
               >
-                This nickname already exists.
+                {errorMessage ? errorMessage : " This nickname already exists."}
                 {"\n"}
                 Please enter a unique nickname
               </ThemedText>
