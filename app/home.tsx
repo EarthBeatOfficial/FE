@@ -182,6 +182,7 @@ export default function HomeScreen() {
         themeId: trailData?.themeId,
         distance: trailData?.distance,
       });
+      // Store trailData in redux to use it in a modal in map.tsx
       dispatch(setRecommendedRoute(resp));
     } catch (error: any) {
       console.log("Error generating a route recommendation", error);
