@@ -11,6 +11,9 @@ interface GlobalInputProps {
   multiline?: boolean;
   numberOfLines?: number;
   readOnly?: boolean;
+  onSubmitEditing?: () => void;
+  returnKeyType?: string;
+  clearButtonMode?: string;
 }
 
 const GlobalInput = ({
@@ -21,6 +24,7 @@ const GlobalInput = ({
   multiline,
   numberOfLines,
   readOnly,
+  onSubmitEditing,
 }: GlobalInputProps) => {
   return (
     <TextInput
@@ -36,6 +40,7 @@ const GlobalInput = ({
       multiline={multiline}
       numberOfLines={numberOfLines}
       readOnly={readOnly}
+      onSubmitEditing={onSubmitEditing}
     />
   );
 };
