@@ -2,15 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableWithoutFeedback,
-  View,
-} from "react-native";
+import { Image, ScrollView, View } from "react-native";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
@@ -66,98 +58,91 @@ export default function NicknameScreen() {
   return (
     <>
       {isLoading && <LoadingModal message={`Welcoming...`} name={nickname} />}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+
+      <LinearGradient
+        colors={["#D3F36B", "#FFF"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.8 }}
+        style={{
+          flex: 1,
+          width: "100%",
+        }}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <LinearGradient
-            colors={["#D3F36B", "#FFF"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 0.8 }}
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingVertical: 20,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View
             style={{
-              flex: 1,
+              gap: 20,
               width: "100%",
+              maxWidth: 400,
+              paddingHorizontal: 20,
             }}
           >
-            <ScrollView
-              contentContainerStyle={{
-                flexGrow: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                paddingVertical: 20,
+            <Image
+              source={logo}
+              style={{
+                width: 280,
+                height: 355,
+                resizeMode: "contain",
+                alignSelf: "center",
               }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+            />
+            <ThemedText
+              type="bold"
+              style={{ fontSize: 25, textAlign: "center" }}
             >
-              <View
+              What should we call you?
+            </ThemedText>
+            {errorState ? (
+              <ThemedText
                 style={{
-                  gap: 20,
-                  width: "100%",
-                  maxWidth: 400,
-                  paddingHorizontal: 20,
+                  textAlign: "center",
+                  color: colors.red.main,
+                  fontSize: 18,
                 }}
               >
-                <Image
-                  source={logo}
-                  style={{
-                    width: 280,
-                    height: 355,
-                    resizeMode: "contain",
-                    alignSelf: "center",
-                  }}
-                />
-                <ThemedText
-                  type="bold"
-                  style={{ fontSize: 25, textAlign: "center" }}
-                >
-                  What should we call you?
-                </ThemedText>
-                {errorState ? (
-                  <ThemedText
-                    style={{
-                      textAlign: "center",
-                      color: colors.red.main,
-                      fontSize: 18,
-                    }}
-                  >
-                    This nickname already exists.
-                    {"\n"}
-                    Please enter a unique nickname
-                  </ThemedText>
-                ) : (
-                  <ThemedText
-                    style={{
-                      textAlign: "center",
-                      color: colors.text.gray,
-                      fontSize: 18,
-                    }}
-                  >
-                    Please provide a unique nickname
-                  </ThemedText>
-                )}
-                <GlobalInput
-                  value={nickname}
-                  onChangeText={(text) => {
-                    setNickname(text);
-                    if (errorState) setErrorState(false);
-                  }}
-                  placeholder="Nickname"
-                  isError={errorState}
-                  multiline={false}
-                  numberOfLines={1}
-                />
-                <GlobalButton
-                  text="Get Started"
-                  onPress={handleContinue}
-                  disabled={!nickname.trim() || errorState || isLoading}
-                />
-              </View>
-            </ScrollView>
-          </LinearGradient>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+                This nickname already exists.
+                {"\n"}
+                Please enter a unique nickname
+              </ThemedText>
+            ) : (
+              <ThemedText
+                style={{
+                  textAlign: "center",
+                  color: colors.text.gray,
+                  fontSize: 18,
+                }}
+              >
+                Please provide a unique nickname
+              </ThemedText>
+            )}
+            <GlobalInput
+              value={nickname}
+              onChangeText={(text) => {
+                setNickname(text);
+                if (errorState) setErrorState(false);
+              }}
+              placeholder="Nickname"
+              isError={errorState}
+              multiline={false}
+              numberOfLines={1}
+            />
+            <GlobalButton
+              text="Get Started"
+              onPress={handleContinue}
+              disabled={!nickname.trim() || errorState || isLoading}
+            />
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </>
   );
 }
