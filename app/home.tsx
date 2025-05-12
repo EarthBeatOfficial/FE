@@ -54,8 +54,6 @@ import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
 
 // for testing
-import RouteModal from "../components/modals/RouteModal";
-import SignalMapModal from "../components/modals/SignalMapModal";
 
 export default function HomeScreen() {
   const router = useRouter();
