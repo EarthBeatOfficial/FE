@@ -10,6 +10,7 @@ import { ThemedText } from "../ThemedText";
 import LocationIcon from "@/assets/icons/location.png";
 import { colors } from "../../constants/colors";
 import walkThemes from "../../constants/walkThemes";
+import distanceData from "../../constants/distanceData";
 
 interface RouteModalProps {
   themeId: number;
@@ -19,6 +20,7 @@ interface RouteModalProps {
 
 const RouteModal = ({ themeId, distance, onPress }: RouteModalProps) => {
   const [theme, setTheme] = useState(walkThemes[0]);
+  const [approxTime, setApproxTime] = useState("");
   useEffect(() => {
     const fetchTheme = () => {
       if (themeId) {
@@ -28,7 +30,16 @@ const RouteModal = ({ themeId, distance, onPress }: RouteModalProps) => {
         }
       }
     };
+    const fetchApproxTime = () => {
+      if (distance) {
+        const timeObj = distanceData.find((item) => item.distance === distance);
+        if (timeObj) {
+          setApproxTime(timeObj.time);
+        }
+      }
+    };
     fetchTheme();
+    fetchApproxTime();
   }, []);
 
   return (
@@ -72,7 +83,7 @@ const RouteModal = ({ themeId, distance, onPress }: RouteModalProps) => {
                   <ThemedText
                     style={{ color: colors.darkGray.main, fontSize: 15 }}
                   >
-                    {distance}km
+                    {distance}km ({approxTime})
                   </ThemedText>
                 </View>
               </View>
