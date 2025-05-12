@@ -305,7 +305,6 @@ export default function HomeScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 10,
-              paddingTop: 10,
             }}
           >
             <Image

@@ -1,19 +1,28 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { useRouter } from "expo-router";
+import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import WarningImage from "@/assets/images/warning.png";
+import { ThemedText } from "../components/ThemedText";
 
 export default function NotFoundScreen() {
+  const router = useRouter();
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">This screen does not exist.</ThemedText>
-        <Link href="/" style={styles.link}>
-          <ThemedText type="link">Go to home screen!</ThemedText>
-        </Link>
-      </ThemedView>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.push("/home")}
+        >
+          {/* <Image source={ArrowIcon} style={{ width: 16, height: 16 }} /> */}
+        </TouchableOpacity>
+        <Image source={WarningImage} style={{ width: 200, height: 200 }} />
+        <ThemedText
+          type="semiBold"
+          style={{ fontSize: 18, textAlign: "center", marginTop: 20 }}
+        >
+          Oops!{"\n"}This page does not exist.
+        </ThemedText>
+      </View>
     </>
   );
 }
@@ -21,12 +30,26 @@ export default function NotFoundScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  backBtn: {
+    padding: 8,
+    borderRadius: "50%",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    width: 45,
+    height: 45,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "absolute",
+    top: 20,
+    left: 20,
   },
 });
