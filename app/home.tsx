@@ -190,6 +190,7 @@ export default function HomeScreen() {
     async function getCurrentLocation() {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
+        console.log("Permission to access location was denied");
         return;
       }
       let location = await Location.getCurrentPositionAsync({});
@@ -199,6 +200,9 @@ export default function HomeScreen() {
           ...trailData,
           location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
         });
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
       }
     }
 
