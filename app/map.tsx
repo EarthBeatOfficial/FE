@@ -20,6 +20,7 @@ import { colors } from "../constants/colors";
 import { Session } from "../constants/interfaces";
 
 // modals
+import SignalMapModal from "@/components/modals/SignalMapModal";
 import SignalModal from "@/components/modals/SignalModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import RouteModal from "../components/modals/RouteModal";
@@ -27,11 +28,12 @@ import RouteModal from "../components/modals/RouteModal";
 // API
 import {
   acceptSignal,
+  cancelSignal,
   deleteSignal,
   getAllSignals,
   getMySignals,
 } from "../api/signalApi";
-import { endWalkSession } from "../api/walkSessionApi";
+import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -81,6 +83,9 @@ export default function MapScreen() {
     distance: string | null;
     themeId: number | null;
   }>({ distance: null, themeId: null });
+  const [signalModalType, setSignalModalType] = useState<
+    "accept" | "responded"
+  >("accept");
 
   const containerStyle = {
     width: "100%",
@@ -217,7 +222,7 @@ export default function MapScreen() {
       } catch (error) {
         console.error(
           "내가 응답한 IN_PROGRESS 시그널 데이터를 가져오는데 실패했습니다:",
-          error
+          (error as any)?.response || error
         );
       }
     };
@@ -268,6 +273,7 @@ export default function MapScreen() {
   // PENDING 마커 클릭 시
   const handlePendingMarkerClick = (signal: Signal) => {
     setSelectedSignal(signal);
+    setSignalModalType("accept");
     setSignalModalVisible(true);
   };
 
@@ -392,6 +398,24 @@ export default function MapScreen() {
       // 필요하다면 signalList 갱신 등 추가 작업
     } catch (error) {
       console.error("Signal 수락 실패:", error);
+    }
+  };
+
+  const handleMarkasResponded = async () => {
+    if (!selectedInProgressSignal) return;
+    setSelectedSignal(selectedInProgressSignal);
+    setSignalModalType("responded");
+    setSignalModalVisible(true);
+    setSelectedInProgressSignal(null);
+  };
+
+  const handleCancelSignal = async () => {
+    if (!selectedInProgressSignal) return;
+    try {
+      await cancelSignal(selectedInProgressSignal.id, userData);
+      setSelectedInProgressSignal(null); // 모달 닫기 등 후처리
+    } catch (error) {
+      console.error("Signal 취소 실패:", error);
     }
   };
 
@@ -534,24 +558,48 @@ export default function MapScreen() {
         />
       )}
 
+      <ConfirmModal
+        message={"Walk started!"}
+        isVisible={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+      />
       {/* SignalModal: 처음에만 표시, Accept 누르면 닫힘 */}
       {signalModalVisible && selectedSignal && (
         <SignalModal
           visible={true}
           onPress={handleAcceptSignal}
           onClose={() => setSignalModalVisible(false)}
-          data={selectedSignal}
-          buttonText="Accept"
-          isAccept={true}
-          // isExpired={expiredSignals.has(selectedSignal.id)}
+          data={{
+            id: selectedSignal.id,
+            title: selectedSignal.title,
+            description: selectedSignal.description,
+            createdAt: selectedSignal.createdAt,
+            categoryId: selectedSignal.categoryId,
+            expiresAt: selectedSignal.expiresAt,
+          }}
+          buttonText={
+            signalModalType === "accept" ? "Accept" : "Mark as Responded"
+          }
+          isAccept={signalModalType === "accept"}
           handleExpired={handleSignalExpired}
         />
       )}
-      <ConfirmModal
-        message={"Walk started!"}
-        isVisible={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-      />
+
+      {/* SignalMapModal */}
+      {selectedInProgressSignal && (
+        <SignalMapModal
+          onRespond={handleMarkasResponded}
+          onCancel={handleCancelSignal}
+          data={{
+            id: selectedInProgressSignal.id,
+            title: selectedInProgressSignal.title,
+            description: selectedInProgressSignal.description,
+            createdAt: selectedInProgressSignal.createdAt,
+            categoryId: selectedInProgressSignal.categoryId,
+            expiresAt: selectedInProgressSignal.expiresAt,
+          }}
+        />
+      )}
     </View>
   );
 }
