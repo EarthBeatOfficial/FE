@@ -1,4 +1,9 @@
-const distanceData = [{ distance: 0, time: "Don't Care" }];
+interface distanceObj {
+  distance: number | null;
+  time: string;
+}
+
+const distanceData: distanceObj[] = [{ distance: null, time: "Don't Care" }];
 
 const startDistance = 1.0; // in km
 const endDistance = 15.0;

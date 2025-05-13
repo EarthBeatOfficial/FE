@@ -20,18 +20,18 @@ const NameCard = (props: any) => {
               marginRight: 10,
             }}
           />
-          <ThemedText style={{ textTransform: "uppercase", fontSize: 30 }}>
+          <ThemedText style={{ textTransform: "uppercase", fontSize: 20 }}>
             {name}
           </ThemedText>
         </View>
         <View style={styles.flexBox}>
           <ThemedText
             type="bold"
-            style={{ fontSize: 25, color: colors.green.main, marginRight: 5 }}
+            style={{ fontSize: 20, color: colors.green.main, marginRight: 5 }}
           >
             {numResponds}
           </ThemedText>
-          <ThemedText style={{ fontSize: 20 }}>responds</ThemedText>
+          <ThemedText style={{ fontSize: 16 }}>responds</ThemedText>
         </View>
       </View>
     </>

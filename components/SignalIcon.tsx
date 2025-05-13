@@ -3,7 +3,7 @@ import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SignalType } from "../constants/signalTypes";
 
 interface SignalIconProps {
-  signal: SignalType;
+  signal?: SignalType;
   size?: number;
   disabled?: boolean;
   onPress?: () => void;
@@ -14,7 +14,7 @@ interface SignalIconProps {
 }
 
 const SignalIcon: React.FC<SignalIconProps> = ({
-  size = 56, // default size
+  size = 50, // default size
   disabled,
   onPress,
   selected = true, // true by default
@@ -22,13 +22,12 @@ const SignalIcon: React.FC<SignalIconProps> = ({
   imgSize,
   isShadow = false,
 }) => {
-  const { image, color } = signal;
   const IconContent = (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: color,
+          backgroundColor: signal?.color,
           width: size,
           height: size,
           borderRadius: size / 2,
@@ -38,12 +37,12 @@ const SignalIcon: React.FC<SignalIconProps> = ({
       ]}
     >
       <Image
-        source={image}
+        source={signal?.image}
         style={[
           styles.image,
           {
-            width: imgSize ? imgSize : 50,
-            height: imgSize ? imgSize : 50,
+            width: imgSize ? imgSize : 42,
+            height: imgSize ? imgSize : 42,
           },
         ]}
         resizeMode="contain"
