@@ -22,6 +22,7 @@ import SignalMapModal from "@/components/modals/SignalMapModal";
 import SignalModal from "@/components/modals/SignalModal";
 
 // API
+import { sendResponse } from "@/api/responsesApi";
 import { acceptSignal, cancelSignal, getAllSignals, getMySignals } from "../api/signalApi";
 import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
 
@@ -29,11 +30,11 @@ import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
 
 /**
  * <TODO>
- * 모달 연결
- * 백엔드와 추가 연결
+ * 추천 루트와 modal이 함께 뜨지 않는 문제 (새로고침 시 루트 사라지고 modal이 뜸)
+ * accept한 signal 마커가 바로 지도에 나타나지 않는 문제
  * 
  * <TODO - later>
- * 내가 응답한 IN_PROGRESS 시그널 마커 다르게 표시하기 (Figma와 똑같이 구현하기에는 google map url 문제가 있어서 조금 어려워 보임) 
+ * 내가 응답한 IN_PROGRESS 시그널 다르게 표시하기 (Figma와 똑같이 구현하기에는 google map url 문제가 있어서 조금 어려워 보임) 
  * 왜 산책로 루트 안뜨는지 - google 맵 데이터에 있는 도보 경로 좌표만 루트 표시 가능
 
  * <주석 type에 대한 설명>
@@ -56,6 +57,72 @@ interface Signal {
   expiresAt: string;
 }
 
+interface SignalModalProps {
+  visible: boolean;
+  onPress: (signalId: number) => void;
+  onClose: () => void;
+  data: {
+    id: number;
+    title: string;
+    description: string;
+    createdAt: string;
+    categoryId: number;
+    expiresAt: string;
+  };
+  buttonText: string;
+  isAccept: boolean;
+  message?: string;
+  setMessage?: (msg: string) => void;
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  topBar: {
+    width: "100%",
+    height: 80,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+    zIndex: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    borderBottomLeftRadius: -20,
+    borderBottomRightRadius: -20,
+    paddingBottom: 15,
+  },
+  backBtn: {
+    padding: 8,
+    borderRadius: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    width: 45,
+    height: 45,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  finishBtn: {
+    backgroundColor: colors.green.main,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  finishBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  userIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#eee",
+  },
+});
+
 export default function MapScreen() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null); // 선택된 signal
   const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
@@ -69,6 +136,7 @@ export default function MapScreen() {
   const [activeSession, setActiveSession] = useState(null); // 활성화된 산책 세션
   const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
   const [signalModalType, setSignalModalType] = useState<"accept" | "responded">("accept");
+  const [responseMessage, setResponseMessage] = useState("");
 
   const containerStyle = {
     width: "100%",
@@ -256,7 +324,10 @@ export default function MapScreen() {
   if (!selectedSignal || !userData?.userId) return;
 
   try {
-    await acceptSignal(selectedSignal.id, userData.userId); // 백엔드 호출
+    await acceptSignal(selectedSignal.id, {
+      userId: userData.userId,
+      message: responseMessage,
+    });
 
     setSignalList((prev) =>
       prev.map((s) =>
@@ -343,7 +414,10 @@ export default function MapScreen() {
   const handleAcceptSignal = async (signalId: number) => {
     if (!selectedSignal || !userData?.userId) return;
     try {
-      await acceptSignal(signalId, { userId: userData.userId });
+      await acceptSignal(signalId, {
+        userId: userData.userId,
+        message: responseMessage,
+      });
       setSignalModalVisible(false);
       // 필요하다면 signalList 갱신 등 추가 작업
     } catch (error) {
@@ -353,6 +427,15 @@ export default function MapScreen() {
 
   const handleMarkasResponded = async () => {
     if (!selectedInProgressSignal) return;
+    try {
+      const responseData = { message: responseMessage };
+      await sendResponse(selectedInProgressSignal.id, responseData);
+      console.log("selectedInProgressSignal.id:", selectedInProgressSignal.id);
+      console.log("responseMessage:", responseMessage);
+      setResponseMessage(""); // 전송 후 초기화
+    } catch (error) {
+      console.error("응답 완료 처리 실패:", error);
+    }
     setSelectedSignal(selectedInProgressSignal);
     setSignalModalType("responded");
     setSignalModalVisible(true);
@@ -499,6 +582,8 @@ export default function MapScreen() {
         }}
         buttonText={signalModalType === "accept" ? "Accept" : "Mark as Responded"}
         isAccept={signalModalType === "accept"}
+        message={responseMessage}
+        setMessage={setResponseMessage}
       />
     )}
 
@@ -520,54 +605,3 @@ export default function MapScreen() {
   </View>
 )};
 
-// Define styles for the screen
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  topBar: {
-    width: "100%",
-    height: 80,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    zIndex: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    borderBottomLeftRadius: -20,
-    borderBottomRightRadius: -20,
-    paddingBottom: 15,
-  },
-  backBtn: {
-    padding: 8,
-    borderRadius: "50%",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    width: 45,
-    height: 45,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  finishBtn: {
-    backgroundColor: colors.green.main,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  finishBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  userIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#eee",
-  },
-});

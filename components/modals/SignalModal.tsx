@@ -28,6 +28,8 @@ interface SignalModalProps {
   };
   buttonText: string;
   isAccept: boolean;
+  message?: string;
+  setMessage?: (msg: string) => void;
 }
 
 const SignalModal = ({
@@ -37,9 +39,11 @@ const SignalModal = ({
   data,
   buttonText,
   isAccept,
+  message,
+  setMessage,
 }: SignalModalProps) => {
   const [signalType, setSignalType] = useState<SignalType>(signalTypes[0]);
-  const [message, setMessage] = useState("");
+
   useEffect(() => {
     const fetchCategory = () => {
       if (data && data?.categoryId) {
@@ -53,10 +57,6 @@ const SignalModal = ({
     };
     fetchCategory();
   }, [data]);
-
-  const handleMessage = (value: string) => {
-    setMessage(value);
-  };
 
   return (
     <>
@@ -93,7 +93,7 @@ const SignalModal = ({
             readOnly={isAccept}
             multiline
             numberOfLines={3}
-            onChangeText={handleMessage}
+            onChangeText={isAccept ? undefined : setMessage}
           />
         </ModalSection>
         <GlobalButton
