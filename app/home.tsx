@@ -39,12 +39,11 @@ import { setRecommendedRoute } from "@/redux/routeSlice";
 import { useDispatch } from "react-redux";
 
 // API
+import { getAutoCompleteSet, getPlaceDetail } from "@/api/autocompleteApi";
 import { getResponses, markResponseAsRead } from "@/api/responsesApi";
 import { recommendRoute } from "@/api/routesApi";
 import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
-
-// for testing
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -85,11 +84,8 @@ export default function HomeScreen() {
 
   const fetchPlaceSuggestions = async (input: string) => {
     try {
-      const response = await fetch(
-        `/api/autocomplete?input=${encodeURIComponent(input)}`
-      );
-      const json = await response.json();
-      setPlaceSuggestions(json.predictions);
+      const response = await getAutoCompleteSet(input);
+      setPlaceSuggestions(response.predictions);
     } catch (err) {
       console.error("Error fetching Google Places:", err);
     }
@@ -102,15 +98,6 @@ export default function HomeScreen() {
         lat: value.lat,
         lng: value.lng,
       });
-      //   try {
-      //     const response = await fetch(
-      //       `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${value}&key=${GOOOGLE_API_KEY}&language=en`
-      //     );
-      //     const json = await response.json();
-      //     setPlaceSuggestions(json.predictions);
-      //   } catch (err) {
-      //     console.error("Error fetching Google Places:", err);
-      //   }
     } else {
       setSignalData({
         ...signalData,
@@ -120,15 +107,12 @@ export default function HomeScreen() {
   };
 
   const handleSelect = async (placeId: string) => {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOOGLE_API_KEY}`
-    );
-    const json = await res.json();
-    if (json.result.geometry.location) {
+    const res = await getPlaceDetail(placeId);
+    if (res.location) {
       setSignalData({
         ...signalData,
-        lat: json.result.geometry.location.lat,
-        lng: json.result.geometry.location.lng,
+        lat: res.location.lat,
+        lng: res.location.lng,
       });
     }
   };
@@ -305,7 +289,6 @@ export default function HomeScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 10,
-              paddingTop: 10,
             }}
           >
             <Image
@@ -406,12 +389,11 @@ export default function HomeScreen() {
         isPanEnabled={isPanEnabled}
         onPressAction={generateSignal}
         disabled={
-          !signalData.categoryId &&
-          !signalData.description &&
-          !signalData.lat &&
-          !signalData.lng &&
-          !signalData.timeLimit &&
-          !signalData.title
+          signalData.title === "" ||
+          signalData.description === "" ||
+          !signalData.lat ||
+          !signalData.lng ||
+          !signalData.categoryId
         }
       >
         <ModalSection style={{ marginBottom: 16 }}>
