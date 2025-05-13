@@ -16,21 +16,22 @@ export default function LandingScreen() {
     <LinearGradient
       colors={["#D3F36B", "#fff"]}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0.8 }}
+      end={{ x: 0, y: 0.8 }}
       style={{
         height: "100%",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 30,
+        gap: 20,
+        padding: 20,
       }}
     >
       <Image
         source={logo}
-        style={{ width: 280, height: 355, resizeMode: "contain" }}
+        style={{ width: 250, height: 320, resizeMode: "contain" }}
       />
-      <ThemedText type="bold" style={{ fontSize: 25 }}>
+      <ThemedText type="bold" style={{ fontSize: 20 }}>
         Walk for the World
       </ThemedText>
       <ThemedText
@@ -38,7 +39,7 @@ export default function LandingScreen() {
           width: 300,
           textAlign: "center",
           color: colors.text.gray,
-          fontSize: 18,
+          fontSize: 14,
         }}
       >
         We aim to help the world become a better place by providing a platform
@@ -47,7 +48,7 @@ export default function LandingScreen() {
       </ThemedText>
       <GlobalButton
         iconSource={ArrowLeft}
-        size={65}
+        size={50}
         onPress={() => router.push("/nickname")}
       />
     </LinearGradient>
