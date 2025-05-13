@@ -28,7 +28,7 @@ import TimePicker from "../components/TimePicker";
 import walkThemes from "@/constants/walkThemes";
 import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
-import { WalkLog } from "../constants/interfaces";
+import { DefaultSignalData, WalkLog } from "../constants/interfaces";
 import signalTypes from "../constants/signalTypes";
 
 // icons / images
@@ -143,12 +143,13 @@ export default function HomeScreen() {
       });
       // store in redux?
 
+      if (response) {
+        setShowAddSignal(false);
+        setShowConfirmModal(true);
+      }
       // Close the modal
-      setShowAddSignal(false);
     } catch (error) {
       console.error("Error creating signal:", error);
-    } finally {
-      setShowConfirmModal(true);
     }
   };
 
@@ -167,7 +168,13 @@ export default function HomeScreen() {
       console.log("Error generating a route recommendation", error);
     } finally {
       setIsLoading(false);
-      router.push("/map");
+      router.push({
+        pathname: "/map",
+        params: {
+          distance: trailData?.distance,
+          themeId: trailData?.themeId,
+        },
+      });
     }
 
     if (trailData?.location) {
@@ -596,7 +603,10 @@ export default function HomeScreen() {
       <ConfirmModal
         signalTitle={signalData?.title}
         isVisible={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setSignalData(DefaultSignalData);
+        }}
       />
 
       {/* testing - Accept*/}
