@@ -19,7 +19,7 @@ const LoadingModal = ({ message, name }: LoadingModalProps) => {
               type="semiBold"
               style={{
                 color: colors.green.main,
-                fontSize: 20,
+                fontSize: 16,
                 textAlign: "center",
               }}
             >

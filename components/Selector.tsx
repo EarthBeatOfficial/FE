@@ -1,4 +1,4 @@
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import styled from "styled-components/native";
 
 // constants
@@ -6,14 +6,19 @@ import { colors } from "../constants/colors";
 
 interface SelecterProps {
   selected: boolean;
+  disabled: boolean;
 }
 
 const Selector = (props: any) => {
   const { distance, time } = props.data;
-  const { selected, onPress } = props;
+  const { selected, onPress, disabled } = props;
 
   return (
-    <Container onPress={() => onPress(distance)} selected={selected}>
+    <Container
+      onPress={() => onPress(distance)}
+      selected={selected}
+      disabled={disabled}
+    >
       <Text
         style={{
           fontSize: 12,
