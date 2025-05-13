@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 18,
+    fontSize: 16,
     color: "#fff",
   },
   icon: {
