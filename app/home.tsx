@@ -394,7 +394,10 @@ export default function HomeScreen() {
                   <Selector
                     data={data}
                     key={key}
-                    selected={trailData?.distance === data.distance}
+                    selected={
+                      walkStatus !== "IN_PROGRESS" &&
+                      trailData?.distance === data.distance
+                    }
                     onPress={(distance: any) => {
                       handleSetTrailData("distance", distance);
                       setIsDistanceSelected(true);
@@ -418,10 +421,15 @@ export default function HomeScreen() {
               {walkThemes.map((theme, key) => {
                 return (
                   <ThemeCard
-                    disabled={!isDistanceSelected}
+                    disabled={
+                      !isDistanceSelected || walkStatus === "IN_PROGRESS"
+                    }
                     theme={theme}
                     key={key}
-                    selected={trailData?.themeId === theme.id}
+                    selected={
+                      walkStatus !== "IN_PROGRESS" &&
+                      trailData?.themeId === theme.id
+                    }
                     onPress={() => {
                       handleSetTrailData("themeId", theme.id);
                     }}
