@@ -8,22 +8,25 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { setWalkStatus } from "../redux/slices/walkSlice";
+import { RootState } from "../redux/store";
 
 // images / icons
 import ArrowIcon from "@/assets/icons/black-arrow.png";
 
 // constants
 import { colors } from "../constants/colors";
+import { Session } from "../constants/interfaces";
 
 // modals
 import SignalModal from "@/components/modals/SignalModal";
+import ConfirmModal from "../components/modals/ConfirmModal";
 import RouteModal from "../components/modals/RouteModal";
 
 // API
 import { acceptSignal, getAllSignals, getMySignals } from "../api/signalApi";
-import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
+import { endWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -61,16 +64,16 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
   const [signalList, setSignalList] = useState<Signal[]>([]); // 현재 signal 리스트 상태
   const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
-  const [routeModalVisible, setRouteModalVisible] = useState(false); // RouteModal 표시 여부
+  const [routeModalVisible, setRouteModalVisible] = useState(true); // RouteModal 표시 여부
   const [isWalking, setIsWalking] = useState(false); // 산책 중 여부
   const [signalModalVisible, setSignalModalVisible] = useState(false);
   const [signalMapModalVisible, setSignalMapModalVisible] = useState(false);
   const [selectedInProgressSignal, setSelectedInProgressSignal] =
     useState<Signal | null>(null);
-  const [activeSession, setActiveSession] = useState(null); // 활성화된 산책 세션
+  const [activeSession, setActiveSession] = useState<Session | null>(null); // 활성화된 산책 세션
   const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
   const [routeDetails, setRouteDetails] = useState<{
-    distance: number | null;
+    distance: string | null;
     themeId: number | null;
   }>({ distance: null, themeId: null });
 
@@ -93,17 +96,22 @@ export default function MapScreen() {
     userId: number;
     nickname: string;
   } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const router = useRouter();
+  const dispatch = useDispatch();
   // themeId, distance 가져오기
   const { distance, themeId } = useLocalSearchParams();
-  console.log(distance, themeId);
-  // setRouteDetails({ distance: distance, themeId: themeId })
+  const parsedDistance = distance ? JSON.parse(distance as string) : null;
+  const parsedTheme = themeId ? JSON.parse(themeId as string) : null;
 
   // call the recommended route through redux
   const recommendedRoute = useSelector(
     (state: RootState) => state.route?.recommendedRoute
   );
+
+  // call the current walk status through redux
+  const walkStatus = useSelector((state: RootState) => state.walk.status);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string,
@@ -165,22 +173,25 @@ export default function MapScreen() {
           setUserData(parsedData);
 
           // 활성화된 산책 세션 확인
-          const session = await getActiveWalkSession(parsedData.userId);
-          if (session && session.id) {
-            setActiveSession(session);
-            setSessionId(session.id);
-            setIsWalking(true);
-            setRouteModalVisible(false);
-          } else {
-            setActiveSession(null);
-            setIsWalking(false);
-            setRouteModalVisible(true); // RouteModal(혹은 SignalModal) 표시
-          }
+          // const session = await getActiveWalkSession(parsedData.userId);
+          // if (session && session.id) {
+          //   setActiveSession(session);
+          //   setSessionId(session.id);
+          //   setIsWalking(true);
+          //   setRouteModalVisible(false);
+          // } else {
+          //   setActiveSession(null);
+          //   setIsWalking(false);
+          //   setRouteModalVisible(true); // RouteModal(혹은 SignalModal) 표시
+          // }
         }
       } catch (error) {
         console.error("유저/세션 데이터 가져오기 실패:", error);
       }
     };
+    if (walkStatus === "IN_PROGRESS") {
+      setRouteModalVisible(false);
+    }
 
     fetchUserDataAndSession();
 
@@ -318,21 +329,41 @@ export default function MapScreen() {
   };
 
   // RouteModal의 Take Route 버튼 핸들러 - routeId BE에서 받아온 이후 사용
-  // const handleTakeRoute = async () => {
-  //   if (!userData?.userId || !recommendedRoute?.routeId) return;
-  //   try {
-  //     const session = await startWalkSession({
-  //       userId: userData.userId,
-  //       routeId: recommendedRoute.routeId,
-  //     });
-  //     setActiveSession(session);
-  //     setSessionId(session.id);
-  //     setIsWalking(true);
-  //     setRouteModalVisible(false);
-  //   } catch (error) {
-  //     console.error("산책 시작에 실패했습니다:", error);
-  //   }
-  // };
+  const handleTakeRoute = async () => {
+    // if (!userData?.userId || !recommendedRoute?.routeId) return;
+    // try {
+    //   const session = await startWalkSession({
+    //     userId: userData.userId,
+    //     routeId: recommendedRoute.routeId,
+    //   });
+    //   setActiveSession(session);
+    //   setSessionId(session.id);
+    //   setRouteModalVisible(false);
+    // // Store session in redux (NO GET request needed for active walk sessions)
+    // } catch (error) {
+    //   console.error("산책 시작에 실패했습니다:", error);
+    // }
+    const TEST_DATA: Session = {
+      id: 1,
+      userId: 1,
+      routeId: 2,
+      startedAt: "2024-03-20T10:00:00Z",
+      finishedAt: null,
+      status: "IN_PROGRESS",
+      route: {
+        id: 2,
+        userId: 1,
+        distance: 1.5,
+        themeId: 1,
+        createdAt: "2024-03-20T10:00:00Z",
+        completedAt: null,
+      },
+    };
+    setActiveSession(TEST_DATA);
+    setRouteModalVisible(false);
+    setIsWalking(true);
+    setShowConfirmModal(true);
+  };
 
   // 경로 좌표 배열 생성 함수
   const getRoutePath = () => {
@@ -373,11 +404,19 @@ export default function MapScreen() {
     }
   };
 
+  const handleBack = () => {
+    // If there's an active session, set the status before going back
+    if (activeSession) {
+      dispatch(setWalkStatus("IN_PROGRESS"));
+    }
+    router.back();
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        {/* 백버튼 */}
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        {/* Update the back button to use handleBack */}
+        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Image source={ArrowIcon} style={{ width: 16, height: 16 }} />
         </TouchableOpacity>
 
@@ -464,10 +503,10 @@ export default function MapScreen() {
       {/* RouteModal: 처음에만 표시, Take Route 누르면 닫힘 - routeId BE에서 받아온 이후 사용 */}
       {routeModalVisible && (
         <RouteModal
-          themeId={1}
-          distance={1}
+          themeId={parsedTheme}
+          distance={parsedDistance}
           onPress={() => {
-            // handleTakeRoute()
+            handleTakeRoute();
           }}
         />
       )}
@@ -483,6 +522,11 @@ export default function MapScreen() {
           isAccept={true}
         />
       )}
+      <ConfirmModal
+        message={"Walk started!"}
+        isVisible={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+      />
     </View>
   );
 }

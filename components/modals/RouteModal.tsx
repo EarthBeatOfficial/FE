@@ -69,13 +69,13 @@ const RouteModal = ({ themeId, distance, onPress }: RouteModalProps) => {
           <View>
             <ThemedText
               type="semiBold"
-              style={{ fontSize: 20, marginBottom: 5 }}
+              style={{ fontSize: 18, marginBottom: 5 }}
             >
               {theme.title.split(/[-&]/)[0]}-based
             </ThemedText>
             <View style={styles.locationBox}>
-              <Image source={LocationIcon} style={{ width: 22, height: 22 }} />
-              <ThemedText style={{ color: colors.darkGray.main, fontSize: 15 }}>
+              <Image source={LocationIcon} style={{ width: 15, height: 15 }} />
+              <ThemedText style={{ color: colors.darkGray.main, fontSize: 12 }}>
                 {distance}km ({approxTime})
               </ThemedText>
             </View>
