@@ -1,6 +1,4 @@
 import {
-  DirectionsRenderer,
-  DirectionsService,
   GoogleMap,
   Marker,
   Polyline,
@@ -72,8 +70,8 @@ export default function MapScreen() {
     lat: number;
     lng: number;
   } | null>(null);
-  const [directions, setDirections] =
-    useState<google.maps.DirectionsResult | null>(null);
+  // const [directions, setDirections] =
+  //   useState<google.maps.DirectionsResult | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 37.544582,
     lng: 127.037589,
@@ -170,45 +168,45 @@ export default function MapScreen() {
   }, [userData]);
 
   // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
-  useEffect(() => {
-    if (!isLoaded || !recommendedRoute) return;
+  // useEffect(() => {
+    // if (!isLoaded || !recommendedRoute) return;
 
-    const directionsService = new window.google.maps.DirectionsService();
+    // const directionsService = new window.google.maps.DirectionsService();
 
-    // destination의 lat, lng에 각각 0.0001을 더함
-    const adjustedDestination = {
-      lat: recommendedRoute.destination.lat + 0.5001,
-      lng: recommendedRoute.destination.lng + 0.5001,
-    };
+    // destination의 lat, lng에 각각 0.5001을 더함
+    // const adjustedDestination = {
+    //   lat: recommendedRoute.destination.lat + 0.5001,
+    //   lng: recommendedRoute.destination.lng + 0.5001,
+    // };
 
-    const directionsRequest = {
-      origin: recommendedRoute.origin,
-      destination: adjustedDestination,
-      // waypoints: recommendedRoute.waypoints,
-      travelMode: google.maps.TravelMode.WALKING,
-    };
+    // const directionsRequest = {
+    //   origin: recommendedRoute.origin,
+    //   destination: adjustedDestination,
+    //   // waypoints: recommendedRoute.waypoints,
+    //   travelMode: google.maps.TravelMode.WALKING,
+    // };
 
-    directionsService.route(directionsRequest, (result, status) => {
-      if (status === "OK" && result) {
-        setDirections(result);
-        setMapCenter(recommendedRoute.origin);
-      } else {
-        console.error("DirectionsService 실패:", status);
-        console.error("요청한 경로:", directionsRequest);
-      }
-    });
-  }, [recommendedRoute, isLoaded]);
+  //   directionsService.route(directionsRequest, (result, status) => {
+  //     if (status === "OK" && result) {
+  //       setDirections(result);
+  //       setMapCenter(recommendedRoute.origin);
+  //     } else {
+  //       console.error("DirectionsService 실패:", status);
+  //       console.error("요청한 경로:", directionsRequest);
+  //     }
+  //   });
+  // }, [recommendedRoute, isLoaded]);
 
 
-  // DirectionsService 요청 결과 처리
-  const directionsCallback = (
-    result: google.maps.DirectionsResult | null,
-    status: google.maps.DirectionsStatus
-  ) => {
-    if (status === "OK" && result) {
-      setDirections(result);
-    }
-  };
+  // // DirectionsService 요청 결과 처리
+  // const directionsCallback = (
+  //   result: google.maps.DirectionsResult | null,
+  //   status: google.maps.DirectionsStatus
+  // ) => {
+  //   if (status === "OK" && result) {
+  //     setDirections(result);
+  //   }
+  // };
 
   // 마커 클릭 시
   const handleMarkerClick = (signal: Signal) => {
@@ -276,14 +274,21 @@ export default function MapScreen() {
     }
   };
 
-  const dummyPath = [
-    { lat: 37.5665, lng: 126.9780 },
-    { lat: 37.5700, lng: 126.9900 },
-    { lat: 37.5800, lng: 127.0000 },
-    { lat: 37.5900, lng: 127.0100 },
-    { lat: 37.6000, lng: 127.0200 },
-    { lat: 37.4979, lng: 127.0276 },
-  ];
+  // 경로 좌표 배열 생성 함수
+  const getRoutePath = () => {
+    if (!recommendedRoute) return [];
+    const path = [];
+    if (recommendedRoute.origin)
+      path.push(recommendedRoute.origin);
+    if (Array.isArray(recommendedRoute.waypoints)) {
+      recommendedRoute.waypoints.forEach((wp) => {
+        if (wp.location) path.push(wp.location);
+      });
+    }
+    if (recommendedRoute.destination)
+      path.push(recommendedRoute.destination);
+    return path;
+  };
 
   return (
     <View style={styles.container}>
@@ -313,7 +318,19 @@ export default function MapScreen() {
  
     {/* map */}
     {isLoaded && (
-      <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={16}>
+      <GoogleMap mapContainerStyle={containerStyle} 
+      center={mapCenter} 
+      zoom={16}
+      options={{
+        disableDefaultUI: true,
+        zoomControl: true,
+        scaleControl: true,
+        gestureHandling: "greedy", // 모바일에서 제스처 허용
+        fullscreenControl: false,  
+        streetViewControl: false,  
+        mapTypeControl: false,     
+      }}>
+        
         {/* 현재 위치 마커 */}
         {currentPosition && (
           <Marker
@@ -351,46 +368,17 @@ export default function MapScreen() {
           />
         ))}
 
-        {/* DirectionsService */}
+        {/* Polyline으로 경로 표시 */}
         {recommendedRoute && (
-          <DirectionsService
+          <Polyline
+            path={getRoutePath()}
             options={{
-              origin: recommendedRoute.origin,
-              destination: {
-                lat: recommendedRoute.destination.lat + 0.0001,
-                lng: recommendedRoute.destination.lng + 0.0001,
-              },
-              waypoints: recommendedRoute.waypoints,
-              travelMode: google.maps.TravelMode.WALKING,
-            }}
-            callback={directionsCallback}
-          />
-        )}
-
-        {/* DirectionsRenderer */}
-        {directions && (
-          <DirectionsRenderer
-            directions={directions}
-            options={{
-              suppressMarkers: true, // 마커는 직접 제어할 경우 true
-              polylineOptions: {
-                strokeColor: "#00C851",
-                strokeOpacity: 0.8,
-                strokeWeight: 5,
-              },
+              strokeColor: "#00C851",
+              strokeOpacity: 0.8,
+              strokeWeight: 5,
             }}
           />
         )}
-
-        {/* 더미 경로 Polyline */}
-        <Polyline
-          path={dummyPath}
-          options={{
-            strokeColor: "#00C851",
-            strokeOpacity: 0.8,
-            strokeWeight: 5,
-          }}
-        />
       </GoogleMap>
     )}
 
