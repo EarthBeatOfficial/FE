@@ -28,9 +28,8 @@ import TimePicker from "../components/TimePicker";
 import walkThemes from "@/constants/walkThemes";
 import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
-import { WalkLog } from "../constants/interfaces";
+import { DefaultSignalData, WalkLog } from "../constants/interfaces";
 import signalTypes from "../constants/signalTypes";
-import { DefaultSignalData } from "../constants/interfaces";
 
 // icons / images
 import MainHelpIcon from "@/assets/icons/main-help.png";
@@ -169,7 +168,13 @@ export default function HomeScreen() {
       console.log("Error generating a route recommendation", error);
     } finally {
       setIsLoading(false);
-      router.push("/map");
+      router.push({
+        pathname: "/map",
+        params: {
+          distance: trailData?.distance,
+          themeId: trailData?.themeId,
+        },
+      });
     }
 
     if (trailData?.location) {
