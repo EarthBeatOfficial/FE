@@ -30,6 +30,7 @@ import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
 import { WalkLog } from "../constants/interfaces";
 import signalTypes from "../constants/signalTypes";
+import { DefaultSignalData } from "../constants/interfaces";
 
 // icons / images
 import MainHelpIcon from "@/assets/icons/main-help.png";
@@ -143,12 +144,13 @@ export default function HomeScreen() {
       });
       // store in redux?
 
+      if (response) {
+        setShowAddSignal(false);
+        setShowConfirmModal(true);
+      }
       // Close the modal
-      setShowAddSignal(false);
     } catch (error) {
       console.error("Error creating signal:", error);
-    } finally {
-      setShowConfirmModal(true);
     }
   };
 
@@ -596,7 +598,10 @@ export default function HomeScreen() {
       <ConfirmModal
         signalTitle={signalData?.title}
         isVisible={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setSignalData(DefaultSignalData);
+        }}
       />
 
       {/* testing - Accept*/}
