@@ -1,12 +1,14 @@
 import {
+  DirectionsRenderer,
   DirectionsService,
   GoogleMap,
   Marker,
+  Polyline,
   useJsApiLoader
 } from "@react-google-maps/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
@@ -17,13 +19,18 @@ import ArrowIcon from "@/assets/icons/black-arrow.png";
 // constants
 import { colors } from "../constants/colors";
 
+// modals
+import RouteModal from "@/components/modals/RouteModal";
+
 // API
 import { getAllSignals, getMySignals } from "../api/signalApi";
+import { startWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * <TODO>
+ * 왜 산책로 루트 안뜨는지
  * 모달 연결
  * 백엔드와 추가 연결
  * 내가 응답한 IN_PROGRESS 시그널 마커 다르게 표시하기 (Figma와 똑같이 구현하기에는 google map url 문제가 있어서 조금 어려워 보임) 
@@ -53,6 +60,8 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
   const [signalList, setSignalList] = useState<Signal[]>([]); // 현재 signal 리스트 상태
   const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
+  const [routeModalVisible, setRouteModalVisible] = useState(true);
+  const [isWalking, setIsWalking] = useState(false); // 산책 중 여부
 
   const containerStyle = {
     width: "100%",
@@ -162,24 +171,33 @@ export default function MapScreen() {
 
   // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
   useEffect(() => {
-  if (!isLoaded || !recommendedRoute) return;
+    if (!isLoaded || !recommendedRoute) return;
 
-  const directionsService = new window.google.maps.DirectionsService();
+    const directionsService = new window.google.maps.DirectionsService();
 
-  const directionsRequest = {
-    ...recommendedRoute,
-    travelMode: google.maps.TravelMode.WALKING,
-  };
+    // destination의 lat, lng에 각각 0.0001을 더함
+    const adjustedDestination = {
+      lat: recommendedRoute.destination.lat + 0.5001,
+      lng: recommendedRoute.destination.lng + 0.5001,
+    };
 
-  directionsService.route(directionsRequest, (result, status) => {
-    if (status === "OK" && result) {
-      setDirections(result);
-      setMapCenter(recommendedRoute.origin);
-    } else {
-      console.error("DirectionsService 실패:", status);
-    }
-  });
-}, [recommendedRoute, isLoaded]);
+    const directionsRequest = {
+      origin: recommendedRoute.origin,
+      destination: adjustedDestination,
+      // waypoints: recommendedRoute.waypoints,
+      travelMode: google.maps.TravelMode.WALKING,
+    };
+
+    directionsService.route(directionsRequest, (result, status) => {
+      if (status === "OK" && result) {
+        setDirections(result);
+        setMapCenter(recommendedRoute.origin);
+      } else {
+        console.error("DirectionsService 실패:", status);
+        console.error("요청한 경로:", directionsRequest);
+      }
+    });
+  }, [recommendedRoute, isLoaded]);
 
 
   // DirectionsService 요청 결과 처리
@@ -245,6 +263,28 @@ export default function MapScreen() {
     }
   };
 
+  // RouteModal의 Take Route 버튼 핸들러
+  const handleTakeRoute = async () => {
+    try {
+      // userData 등 필요한 정보 전달
+      await startWalkSession(userData); // userData는 이미 state에 있음
+      setRouteModalVisible(false);
+      setIsWalking(true);
+    } catch (error) {
+      console.error("산책 시작에 실패했습니다:", error);
+      // 필요시 에러 안내
+    }
+  };
+
+  const dummyPath = [
+    { lat: 37.5665, lng: 126.9780 },
+    { lat: 37.5700, lng: 126.9900 },
+    { lat: 37.5800, lng: 127.0000 },
+    { lat: 37.5900, lng: 127.0100 },
+    { lat: 37.6000, lng: 127.0200 },
+    { lat: 37.4979, lng: 127.0276 },
+  ];
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -253,21 +293,23 @@ export default function MapScreen() {
           <Image source={ArrowIcon} style={{ width: 16, height: 16 }} />
         </TouchableOpacity>
 
-        {/* Finish Walk 버튼 */}
-        <TouchableOpacity
-          style={styles.finishBtn}
-          onPress={() => {
-            // HACK: finish walk 로직
-          }}
-        >
-          <Text style={styles.finishBtnText}>Finish Walk</Text>
-        </TouchableOpacity>
+        {/* Finish Walk 버튼: 산책 중일 때만 표시 */}
+        {isWalking && (
+          <TouchableOpacity
+            style={styles.finishBtn}
+            onPress={() => {
+              // HACK: finish walk 로직
+            }}
+          >
+            <Text style={styles.finishBtnText}>Finish Walk</Text>
+          </TouchableOpacity>
+        )}
 
-      <Image
-        source={require("../assets/images/user-head.png")}
-        style={styles.userIcon}
-      />
-    </View>
+        <Image
+          source={require("../assets/images/user-head.png")}
+          style={styles.userIcon}
+        />
+      </View>
  
     {/* map */}
     {isLoaded && (
@@ -313,13 +355,52 @@ export default function MapScreen() {
         {recommendedRoute && (
           <DirectionsService
             options={{
-              ...recommendedRoute,
+              origin: recommendedRoute.origin,
+              destination: {
+                lat: recommendedRoute.destination.lat + 0.0001,
+                lng: recommendedRoute.destination.lng + 0.0001,
+              },
+              waypoints: recommendedRoute.waypoints,
               travelMode: google.maps.TravelMode.WALKING,
             }}
             callback={directionsCallback}
           />
         )}
+
+        {/* DirectionsRenderer */}
+        {directions && (
+          <DirectionsRenderer
+            directions={directions}
+            options={{
+              suppressMarkers: true, // 마커는 직접 제어할 경우 true
+              polylineOptions: {
+                strokeColor: "#00C851",
+                strokeOpacity: 0.8,
+                strokeWeight: 5,
+              },
+            }}
+          />
+        )}
+
+        {/* 더미 경로 Polyline */}
+        <Polyline
+          path={dummyPath}
+          options={{
+            strokeColor: "#00C851",
+            strokeOpacity: 0.8,
+            strokeWeight: 5,
+          }}
+        />
       </GoogleMap>
+    )}
+
+    {/* RouteModal: 처음에만 표시, Take Route 누르면 닫힘 */}
+    {routeModalVisible && (
+      <RouteModal
+        themeId={1}
+        distance={1}
+        onPress={handleTakeRoute}
+      />
     )}
   </View>
 )};
