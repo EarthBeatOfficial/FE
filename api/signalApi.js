@@ -21,11 +21,10 @@ export const cancelSignal = async (signalId, userData) => {
   return response.data;
 };
 
-export const deleteSignal = async (signalId, userData) => {
-  const response = await axiosInstance.delete(
-    `/signals/${signalId}/cancel`,
-    userData
-  );
+export const deleteSignal = async (signalId, userId) => {
+  const response = await axiosInstance.delete(`/signals/${signalId}`, {
+    data: { userId },
+  });
   return response.data;
 };
 
@@ -34,10 +33,7 @@ export const getAllSignals = async () => {
   return response.data;
 };
 
-
 export const getMySignals = async (userId) => {
-  const response = await axiosInstance.get(
-    `/signals/mysignals/${userId}`,
-  );
+  const response = await axiosInstance.get(`/signals/mysignals/${userId}`);
   return response.data;
 };

@@ -2,29 +2,33 @@ import {
   GoogleMap,
   Marker,
   Polyline,
-  useJsApiLoader
+  useJsApiLoader,
 } from "@react-google-maps/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { setWalkStatus } from "../redux/slices/walkSlice";
+import { RootState } from "../redux/store";
 
 // images / icons
 import ArrowIcon from "@/assets/icons/black-arrow.png";
 
 // constants
 import { colors } from "../constants/colors";
+import { Session } from "../constants/interfaces";
 
 // modals
 import SignalMapModal from "@/components/modals/SignalMapModal";
 import SignalModal from "@/components/modals/SignalModal";
+import ConfirmModal from "../components/modals/ConfirmModal";
+import RouteModal from "../components/modals/RouteModal";
 
 // API
 import { sendResponse } from "@/api/responsesApi";
-import { acceptSignal, cancelSignal, getAllSignals, getMySignals } from "../api/signalApi";
-import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
+import { acceptSignal, cancelSignal, deleteSignal, getAllSignals, getMySignals } from "../api/signalApi";
+import { endWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -75,67 +79,26 @@ interface SignalModalProps {
   setMessage?: (msg: string) => void;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  topBar: {
-    width: "100%",
-    height: 80,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    zIndex: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    borderBottomLeftRadius: -20,
-    borderBottomRightRadius: -20,
-    paddingBottom: 15,
-  },
-  backBtn: {
-    padding: 8,
-    borderRadius: 50,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    width: 45,
-    height: 45,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  finishBtn: {
-    backgroundColor: colors.green.main,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  finishBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  userIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#eee",
-  },
-});
-
 export default function MapScreen() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null); // 선택된 signal
   const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
   const [signalList, setSignalList] = useState<Signal[]>([]); // 현재 signal 리스트 상태
   const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
-  const [routeModalVisible, setRouteModalVisible] = useState(false); // RouteModal 표시 여부
+  const [routeModalVisible, setRouteModalVisible] = useState(true); // RouteModal 표시 여부
   const [isWalking, setIsWalking] = useState(false); // 산책 중 여부
   const [signalModalVisible, setSignalModalVisible] = useState(false);
   const [signalMapModalVisible, setSignalMapModalVisible] = useState(false);
-  const [selectedInProgressSignal, setSelectedInProgressSignal] = useState<Signal | null>(null);
-  const [activeSession, setActiveSession] = useState(null); // 활성화된 산책 세션
+  const [selectedInProgressSignal, setSelectedInProgressSignal] =
+    useState<Signal | null>(null);
+  const [activeSession, setActiveSession] = useState<Session | null>(null); // 활성화된 산책 세션
   const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
-  const [signalModalType, setSignalModalType] = useState<"accept" | "responded">("accept");
+  const [routeDetails, setRouteDetails] = useState<{
+    distance: string | null;
+    themeId: number | null;
+  }>({ distance: null, themeId: null });
+  const [signalModalType, setSignalModalType] = useState<
+    "accept" | "responded"
+  >("accept");
   const [responseMessage, setResponseMessage] = useState("");
 
   const containerStyle = {
@@ -157,43 +120,52 @@ export default function MapScreen() {
     userId: number;
     nickname: string;
   } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const router = useRouter();
+  const dispatch = useDispatch();
+  // themeId, distance 가져오기
+  const { distance, themeId } = useLocalSearchParams();
+  const parsedDistance = distance ? JSON.parse(distance as string) : null;
+  const parsedTheme = themeId ? JSON.parse(themeId as string) : null;
+
   // call the recommended route through redux
   const recommendedRoute = useSelector(
     (state: RootState) => state.route?.recommendedRoute
   );
 
+  // call the current walk status through redux
+  const walkStatus = useSelector((state: RootState) => state.walk.status);
+
   const { isLoaded } = useJsApiLoader({
-  googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-});
+    googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+  });
 
   // 현재 위치 추적
   useEffect(() => {
-  if (!isLoaded || !navigator.geolocation) return;
+    if (!isLoaded || !navigator.geolocation) return;
 
-  const watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const { latitude, longitude } = pos.coords;
-      setCurrentPosition({ lat: latitude, lng: longitude });
-      setMapCenter({ lat: latitude, lng: longitude });
-    },
-    (err) => {
-      console.warn("위치 정보를 가져올 수 없습니다.", err);
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000, // 5초
-    }
-  );
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCurrentPosition({ lat: latitude, lng: longitude });
+        setMapCenter({ lat: latitude, lng: longitude });
+      },
+      (err) => {
+        console.warn("위치 정보를 가져올 수 없습니다.", err);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000, // 5초
+      }
+    );
 
-  // cleanup 함수 반환
-  return () => {
-    navigator.geolocation.clearWatch(watchId);
-  };
-}, [isLoaded]);
-
+    // cleanup 함수 반환
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [isLoaded]);
 
   // PENDING 시그널 데이터 가져오기
   useEffect(() => {
@@ -203,7 +175,10 @@ export default function MapScreen() {
         const signals = await getAllSignals();
         setSignalList(signals);
       } catch (error) {
-        console.error("PENDING 시그널 데이터를 가져오는데 실패했습니다:", error);
+        console.error(
+          "PENDING 시그널 데이터를 가져오는데 실패했습니다:",
+          error
+        );
       }
     };
 
@@ -222,22 +197,26 @@ export default function MapScreen() {
           setUserData(parsedData);
 
           // 활성화된 산책 세션 확인
-          const session = await getActiveWalkSession(parsedData.userId);
-          if (session && session.id) {
-            setActiveSession(session);
-            setSessionId(session.id);
-            setIsWalking(true);
-            setRouteModalVisible(false);
-          } else {
-            setActiveSession(null);
-            setIsWalking(false);
-            setRouteModalVisible(true); // RouteModal(혹은 SignalModal) 표시
-          }
+          // const session = await getActiveWalkSession(parsedData.userId);
+          // if (session && session.id) {
+          //   setActiveSession(session);
+          //   setSessionId(session.id);
+          //   setIsWalking(true);
+          //   setRouteModalVisible(false);
+          // } else {
+          //   setActiveSession(null);
+          //   setIsWalking(false);
+          //   setRouteModalVisible(true); // RouteModal(혹은 SignalModal) 표시
+          // }
         }
       } catch (error) {
         console.error("유저/세션 데이터 가져오기 실패:", error);
       }
     };
+    if (walkStatus === "IN_PROGRESS") {
+      setRouteModalVisible(false);
+    }
+
     fetchUserDataAndSession();
 
     // 언마운트 시 인터벌 해제
@@ -267,22 +246,22 @@ export default function MapScreen() {
 
   // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
   // useEffect(() => {
-    // if (!isLoaded || !recommendedRoute) return;
+  // if (!isLoaded || !recommendedRoute) return;
 
-    // const directionsService = new window.google.maps.DirectionsService();
+  // const directionsService = new window.google.maps.DirectionsService();
 
-    // destination의 lat, lng에 각각 0.5001을 더함
-    // const adjustedDestination = {
-    //   lat: recommendedRoute.destination.lat + 0.5001,
-    //   lng: recommendedRoute.destination.lng + 0.5001,
-    // };
+  // destination의 lat, lng에 각각 0.5001을 더함
+  // const adjustedDestination = {
+  //   lat: recommendedRoute.destination.lat + 0.5001,
+  //   lng: recommendedRoute.destination.lng + 0.5001,
+  // };
 
-    // const directionsRequest = {
-    //   origin: recommendedRoute.origin,
-    //   destination: adjustedDestination,
-    //   // waypoints: recommendedRoute.waypoints,
-    //   travelMode: google.maps.TravelMode.WALKING,
-    // };
+  // const directionsRequest = {
+  //   origin: recommendedRoute.origin,
+  //   destination: adjustedDestination,
+  //   // waypoints: recommendedRoute.waypoints,
+  //   travelMode: google.maps.TravelMode.WALKING,
+  // };
 
   //   directionsService.route(directionsRequest, (result, status) => {
   //     if (status === "OK" && result) {
@@ -294,7 +273,6 @@ export default function MapScreen() {
   //     }
   //   });
   // }, [recommendedRoute, isLoaded]);
-
 
   // // DirectionsService 요청 결과 처리
   // const directionsCallback = (
@@ -314,33 +292,33 @@ export default function MapScreen() {
   };
 
   // IN_PROGRESS 마커 클릭 시
-   const handleInProgressMarkerClick = (signal: Signal) => {
+  const handleInProgressMarkerClick = (signal: Signal) => {
     setSelectedInProgressSignal(signal);
     setSignalMapModalVisible(true);
   };
 
   // signal 수락 시 상태를 "IN_PROGRESS"로 변경
   const handleAccept = async () => {
-  if (!selectedSignal || !userData?.userId) return;
+    if (!selectedSignal || !userData?.userId) return;
 
-  try {
-    await acceptSignal(selectedSignal.id, {
-      userId: userData.userId,
-      message: responseMessage,
-    });
+    try {
+      await acceptSignal(selectedSignal.id, {
+        userId: userData.userId,
+        message: responseMessage,
+      });
 
-    setSignalList((prev) =>
-      prev.map((s) =>
-        s.id === selectedSignal.id ? { ...s, status: "IN_PROGRESS" } : s
-      )
-    );
+      setSignalList((prev) =>
+        prev.map((s) =>
+          s.id === selectedSignal.id ? { ...s, status: "IN_PROGRESS" } : s
+        )
+      );
 
-    setModalVisible(false);
-  } catch (error) {
-    console.error("Signal 수락 실패:", error);
-    // TODO: 사용자에게 오류 안내 UI 필요 시 처리
-  }
-};
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Signal 수락 실패:", error);
+      // TODO: 사용자에게 오류 안내 UI 필요 시 처리
+    }
+  };
 
   // Handle modal cancel/close
   const handleCancel = () => {
@@ -379,47 +357,66 @@ export default function MapScreen() {
   };
 
   // RouteModal의 Take Route 버튼 핸들러 - routeId BE에서 받아온 이후 사용
-  // const handleTakeRoute = async () => {
-  //   if (!userData?.userId || !recommendedRoute?.routeId) return;
-  //   try {
-  //     const session = await startWalkSession({
-  //       userId: userData.userId,
-  //       routeId: recommendedRoute.routeId,
-  //     });
-  //     setActiveSession(session);
-  //     setSessionId(session.id);
-  //     setIsWalking(true);
-  //     setRouteModalVisible(false);
-  //   } catch (error) {
-  //     console.error("산책 시작에 실패했습니다:", error);
-  //   }
-  // };
+  const handleTakeRoute = async () => {
+    // if (!userData?.userId || !recommendedRoute?.routeId) return;
+    // try {
+    //   const session = await startWalkSession({
+    //     userId: userData.userId,
+    //     routeId: recommendedRoute.routeId,
+    //   });
+    //   setActiveSession(session);
+    //   setSessionId(session.id);
+    //   setRouteModalVisible(false);
+    // // Store session in redux (NO GET request needed for active walk sessions)
+    // } catch (error) {
+    //   console.error("산책 시작에 실패했습니다:", error);
+    // }
+    const TEST_DATA: Session = {
+      id: 1,
+      userId: 1,
+      routeId: 2,
+      startedAt: "2024-03-20T10:00:00Z",
+      finishedAt: null,
+      status: "IN_PROGRESS",
+      route: {
+        id: 2,
+        userId: 1,
+        distance: 1.5,
+        themeId: 1,
+        createdAt: "2024-03-20T10:00:00Z",
+        completedAt: null,
+      },
+    };
+    setActiveSession(TEST_DATA);
+    setRouteModalVisible(false);
+    setIsWalking(true);
+    setShowConfirmModal(true);
+  };
 
   // 경로 좌표 배열 생성 함수
   const getRoutePath = () => {
     if (!recommendedRoute) return [];
     const path = [];
-    if (recommendedRoute.origin)
-      path.push(recommendedRoute.origin);
+    if (recommendedRoute.origin) path.push(recommendedRoute.origin);
     if (Array.isArray(recommendedRoute.waypoints)) {
       recommendedRoute.waypoints.forEach((wp) => {
         if (wp.location) path.push(wp.location);
       });
     }
-    if (recommendedRoute.destination)
-      path.push(recommendedRoute.destination);
+    if (recommendedRoute.destination) path.push(recommendedRoute.destination);
     return path;
   };
 
   const handleAcceptSignal = async (signalId: number) => {
     if (!selectedSignal || !userData?.userId) return;
     try {
-      await acceptSignal(signalId, {
+      const body = {
         userId: userData.userId,
         message: responseMessage,
-      });
+      };
+      console.log("acceptSignal body:", body);
+      await acceptSignal(signalId, body);
       setSignalModalVisible(false);
-      // 필요하다면 signalList 갱신 등 추가 작업
     } catch (error) {
       console.error("Signal 수락 실패:", error);
     }
@@ -430,8 +427,7 @@ export default function MapScreen() {
     try {
       const responseData = { message: responseMessage };
       await sendResponse(selectedInProgressSignal.id, responseData);
-      console.log("selectedInProgressSignal.id:", selectedInProgressSignal.id);
-      console.log("responseMessage:", responseMessage);
+      console.log("보내는 메시지:", responseMessage);
       setResponseMessage(""); // 전송 후 초기화
     } catch (error) {
       console.error("응답 완료 처리 실패:", error);
@@ -466,20 +462,43 @@ export default function MapScreen() {
     }
   };
 
+  const handleBack = () => {
+    // If there's an active session, set the status before going back
+    if (activeSession) {
+      dispatch(setWalkStatus("IN_PROGRESS"));
+    }
+    router.back();
+  };
+
+  const handleSignalExpired = async (signalId: number) => {
+    // setExpiredSignals((prev) => new Set([...prev, signalId]));
+    // // You can also update the signal's status in your signalList here if needed
+    // setSignalList((prev) =>
+    //   prev.map((signal) =>
+    //     signal.id === signalId ? { ...signal, status: "EXPIRED" } : signal
+    //   )
+    // );
+    if (signalId) {
+      try {
+        const deleted = await deleteSignal(signalId, userData?.userId);
+        console.log("deleted!", deleted);
+      } catch (error) {
+        console.error("Error marking expired signals as expired");
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        {/* 백버튼 */}
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        {/* Update the back button to use handleBack */}
+        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Image source={ArrowIcon} style={{ width: 16, height: 16 }} />
         </TouchableOpacity>
 
         {/* Finish Walk 버튼: 산책 중일 때만 표시 */}
         {isWalking && (
-          <TouchableOpacity
-            style={styles.finishBtn}
-            onPress={handleFinishWalk}
-          >
+          <TouchableOpacity style={styles.finishBtn} onPress={handleFinishWalk}>
             <Text style={styles.finishBtnText}>Finish Walk</Text>
           </TouchableOpacity>
         )}
@@ -489,119 +508,179 @@ export default function MapScreen() {
           style={styles.userIcon}
         />
       </View>
- 
-    {/* map */}
-    {isLoaded && (
-      <GoogleMap mapContainerStyle={containerStyle} 
-      center={mapCenter} 
-      zoom={16}
-      options={{
-        disableDefaultUI: true,
-        zoomControl: false,
-        scaleControl: true,
-        gestureHandling: "greedy", // 모바일에서 제스처 허용
-        fullscreenControl: false,  
-        streetViewControl: false,  
-        mapTypeControl: false,     
-      }}>
-        
-        {/* 현재 위치 마커 */}
-        {currentPosition && (
-          <Marker
-            position={currentPosition}
-            icon={{
-              url: "https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/user-location.png",
-              scaledSize: new window.google.maps.Size(30, 30),
-            }}
-          />
-        )}
 
-        {/* PENDING 시그널 마커 */}
-        {signalList.map((signal) => (
-          <Marker
-            key={`pending-${signal.id}`}
-            position={{ lat: signal.lat, lng: signal.lng }}
-            onClick={() => handlePendingMarkerClick(signal)}
-            icon={{
-              url: getIcon(signal.categoryId),
-              scaledSize: new window.google.maps.Size(80, 80),
-            }}
-          />
-        ))}
+      {/* map */}
+      {isLoaded && (
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={mapCenter}
+          zoom={16}
+          options={{
+            disableDefaultUI: true,
+            zoomControl: false,
+            scaleControl: true,
+            gestureHandling: "greedy", // 모바일에서 제스처 허용
+            fullscreenControl: false,
+            streetViewControl: false,
+            mapTypeControl: false,
+          }}
+        >
+          {/* 현재 위치 마커 */}
+          {currentPosition && (
+            <Marker
+              position={currentPosition}
+              icon={{
+                url: "https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/user-location.png",
+                scaledSize: new window.google.maps.Size(30, 30),
+              }}
+            />
+          )}
 
-        {/* IN_PROGRESS 시그널 마커 */}
-        {myProgressSignals.map((signal) => (
-          <Marker
-            key={`my-${signal.id}`}
-            position={{ lat: signal.lat, lng: signal.lng }}
-            onClick={() => handleInProgressMarkerClick(signal)}
-            icon={{
-              url: getIcon(signal.categoryId),
-              scaledSize: new window.google.maps.Size(120, 120),
-            }}
-          />
-        ))}
+          {/* PENDING 시그널 마커 */}
+          {signalList.map((signal) => (
+            <Marker
+              key={`pending-${signal.id}`}
+              position={{ lat: signal.lat, lng: signal.lng }}
+              onClick={() => handlePendingMarkerClick(signal)}
+              icon={{
+                url: getIcon(signal.categoryId),
+                scaledSize: new window.google.maps.Size(80, 80),
+              }}
+            />
+          ))}
 
-        {/* Polyline으로 경로 표시 */}
-        {recommendedRoute && (
-          <Polyline
-            path={getRoutePath()}
-            options={{
-              strokeColor: "#336666",
-              strokeOpacity: 0.8,
-              strokeWeight: 5,
-            }}
-          />
-        )}
-      </GoogleMap>
-    )}
+          {/* IN_PROGRESS 시그널 마커 */}
+          {myProgressSignals.map((signal) => (
+            <Marker
+              key={`my-${signal.id}`}
+              position={{ lat: signal.lat, lng: signal.lng }}
+              onClick={() => handleInProgressMarkerClick(signal)}
+              icon={{
+                url: getIcon(signal.categoryId),
+                scaledSize: new window.google.maps.Size(120, 120),
+              }}
+            />
+          ))}
 
-    {/* RouteModal: 처음에만 표시, Take Route 누르면 닫힘 - routeId BE에서 받아온 이후 사용
+          {/* Polyline으로 경로 표시 */}
+          {recommendedRoute && (
+            <Polyline
+              path={getRoutePath()}
+              options={{
+                strokeColor: "#336666",
+                strokeOpacity: 0.8,
+                strokeWeight: 5,
+              }}
+            />
+          )}
+        </GoogleMap>
+      )}
+
+      {/* RouteModal: 처음에만 표시, Take Route 누르면 닫힘 - routeId BE에서 받아온 이후 사용 */}
       {routeModalVisible && (
         <RouteModal
-          themeId={1}
-          distance={1}
-          onPress={handleTakeRoute}
+          themeId={parsedTheme}
+          distance={parsedDistance}
+          onPress={() => {
+            handleTakeRoute();
+          }}
         />
       )}
-    */}
 
-    {/* SignalModal: 처음에만 표시, Accept 누르면 닫힘 */}
-    {signalModalVisible && selectedSignal && (
-      <SignalModal
-        visible={true}
-        onPress={handleAcceptSignal}
-        onClose={() => setSignalModalVisible(false)}
-        data={{
-          id: selectedSignal.id,
-          title: selectedSignal.title,
-          description: selectedSignal.description,
-          createdAt: selectedSignal.createdAt,
-          categoryId: selectedSignal.categoryId,
-          expiresAt: selectedSignal.expiresAt,
-        }}
-        buttonText={signalModalType === "accept" ? "Accept" : "Mark as Responded"}
-        isAccept={signalModalType === "accept"}
-        message={responseMessage}
-        setMessage={setResponseMessage}
+      <ConfirmModal
+        message={"Walk started!"}
+        isVisible={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
       />
-    )}
+      {/* SignalModal: 처음에만 표시, Accept 누르면 닫힘 */}
+      {signalModalVisible && selectedSignal && (
+        <SignalModal
+          visible={true}
+          onPress={handleAcceptSignal}
+          onClose={() => setSignalModalVisible(false)}
+          data={{
+            id: selectedSignal.id,
+            title: selectedSignal.title,
+            description: selectedSignal.description,
+            createdAt: selectedSignal.createdAt,
+            categoryId: selectedSignal.categoryId,
+            expiresAt: selectedSignal.expiresAt,
+          }}
+          buttonText={
+            signalModalType === "accept" ? "Accept" : "Mark as Responded"
+          }
+          isAccept={signalModalType === "accept"}
+          handleExpired={handleSignalExpired}
+        />
+      )}
 
-    {/* SignalMapModal */}
-    {selectedInProgressSignal && (
-      <SignalMapModal
-        onRespond={handleMarkasResponded}
-        onCancel={handleCancelSignal}
-        data={{
-          id: selectedInProgressSignal.id,
-          title: selectedInProgressSignal.title,
-          description: selectedInProgressSignal.description,
-          createdAt: selectedInProgressSignal.createdAt,
-          categoryId: selectedInProgressSignal.categoryId,
-          expiresAt: selectedInProgressSignal.expiresAt,
-        }}
-      />
-    )}
-  </View>
-)};
+      {/* SignalMapModal */}
+      {selectedInProgressSignal && (
+        <SignalMapModal
+          onRespond={handleMarkasResponded}
+          onCancel={handleCancelSignal}
+          data={{
+            id: selectedInProgressSignal.id,
+            title: selectedInProgressSignal.title,
+            description: selectedInProgressSignal.description,
+            createdAt: selectedInProgressSignal.createdAt,
+            categoryId: selectedInProgressSignal.categoryId,
+            expiresAt: selectedInProgressSignal.expiresAt,
+          }}
+        />
+      )}
+    </View>
+  );
+}
 
+// Define styles for the screen
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  topBar: {
+    width: "100%",
+    height: 80,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+    zIndex: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    borderBottomLeftRadius: -20,
+    borderBottomRightRadius: -20,
+    paddingBottom: 15,
+  },
+  backBtn: {
+    padding: 8,
+    borderRadius: "50%",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    width: 45,
+    height: 45,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  finishBtn: {
+    backgroundColor: colors.green.main,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  finishBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  userIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#eee",
+  },
+});
