@@ -15,7 +15,6 @@ import { RootState } from "../store/store";
 import ArrowIcon from "@/assets/icons/black-arrow.png";
 
 // constants
-// import { GOOGLE_API_KEY } from "@/constants/tokens";
 import { colors } from "../constants/colors";
 
 // API
@@ -25,9 +24,8 @@ import { getAllSignals, getMySignals } from "../api/signalApi";
 
 /**
  * <TODO>
- * 백엔드와 연결해야 할 것들 연결
- *  추천 루트 띄우기
  * 모달 연결
+ * 백엔드와 추가 연결
  * 내가 응답한 IN_PROGRESS 시그널 마커 다르게 표시하기 (Figma와 똑같이 구현하기에는 google map url 문제가 있어서 조금 어려워 보임) 
  * 
  * <주석 type에 대한 설명>
@@ -55,19 +53,6 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
   const [signalList, setSignalList] = useState<Signal[]>([]); // 현재 signal 리스트 상태
   const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
-  const [allSignals, setAllSignals] = useState<Signal[]>([]); // 모든 시그널을 합친 리스트
-
-  // 기본 경로 설정 (추후 Redux에서 데이터가 없을 경우 사용)
-  const MOCK_DIRECTIONS_REQUEST = {
-    origin: { lat: 37.544582, lng: 127.037589 },
-    destination: { lat: 37.58, lng: 127.035589 },
-    waypoints: [
-      { location: { lat: 37.54607, lng: 127.038879 } },
-      { location: { lat: 37.549907, lng: 127.033275 } },
-      { location: { lat: 37.531693, lng: 127.066134 } },
-    ],
-    travelMode: "WALKING" as google.maps.TravelMode,
-  };
 
   const containerStyle = {
     width: "100%",
@@ -174,29 +159,6 @@ export default function MapScreen() {
 
     fetchMySignals();
   }, [userData]);
-
-  // signalList와 myProgressSignals가 변경될 때마다 모든 시그널 목록 업데이트
-  useEffect(() => {
-    // 두 배열 결합 (중복 제거)
-    const combinedSignals = [...signalList];
-
-    // myProgressSignals 중 signalList에 없는 항목만 추가
-    myProgressSignals.forEach((mySignal) => {
-      const exists = combinedSignals.some(
-        (signal) => signal.id === mySignal.id
-      );
-      if (!exists) {
-        combinedSignals.push(mySignal);
-      }
-    });
-
-    // resolved 상태의 시그널 제외
-    const filteredSignals = combinedSignals.filter(
-      (signal) => signal.status !== "RESOLVED"
-    );
-
-    setAllSignals(filteredSignals);
-  }, [signalList, myProgressSignals]);
 
   // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
   useEffect(() => {
