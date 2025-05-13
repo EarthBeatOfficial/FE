@@ -25,7 +25,12 @@ import ConfirmModal from "../components/modals/ConfirmModal";
 import RouteModal from "../components/modals/RouteModal";
 
 // API
-import { acceptSignal, getAllSignals, getMySignals } from "../api/signalApi";
+import {
+  acceptSignal,
+  deleteSignal,
+  getAllSignals,
+  getMySignals,
+} from "../api/signalApi";
 import { endWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -412,6 +417,24 @@ export default function MapScreen() {
     router.back();
   };
 
+  const handleSignalExpired = async (signalId: number) => {
+    // setExpiredSignals((prev) => new Set([...prev, signalId]));
+    // // You can also update the signal's status in your signalList here if needed
+    // setSignalList((prev) =>
+    //   prev.map((signal) =>
+    //     signal.id === signalId ? { ...signal, status: "EXPIRED" } : signal
+    //   )
+    // );
+    if (signalId) {
+      try {
+        const deleted = await deleteSignal(signalId, userData?.userId);
+        console.log("deleted!", deleted);
+      } catch (error) {
+        console.error("Error marking expired signals as expired");
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -520,6 +543,8 @@ export default function MapScreen() {
           data={selectedSignal}
           buttonText="Accept"
           isAccept={true}
+          // isExpired={expiredSignals.has(selectedSignal.id)}
+          handleExpired={handleSignalExpired}
         />
       )}
       <ConfirmModal
