@@ -18,21 +18,23 @@ import ArrowIcon from "@/assets/icons/black-arrow.png";
 import { colors } from "../constants/colors";
 
 // modals
-import RouteModal from "@/components/modals/RouteModal";
+import SignalModal from "@/components/modals/SignalModal";
 
 // API
-import { getAllSignals, getMySignals } from "../api/signalApi";
-import { startWalkSession } from "../api/walkSessionApi";
+import { acceptSignal, getAllSignals, getMySignals } from "../api/signalApi";
+import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * <TODO>
- * 왜 산책로 루트 안뜨는지
  * 모달 연결
  * 백엔드와 추가 연결
- * 내가 응답한 IN_PROGRESS 시그널 마커 다르게 표시하기 (Figma와 똑같이 구현하기에는 google map url 문제가 있어서 조금 어려워 보임) 
  * 
+ * <TODO - later>
+ * 내가 응답한 IN_PROGRESS 시그널 마커 다르게 표시하기 (Figma와 똑같이 구현하기에는 google map url 문제가 있어서 조금 어려워 보임) 
+ * 왜 산책로 루트 안뜨는지 - google 맵 데이터에 있는 도보 경로 좌표만 루트 표시 가능
+
  * <주석 type에 대한 설명>
  * HACK : 추후 수정 필요
  * FIXME : 당장 수정 필요
@@ -58,8 +60,13 @@ export default function MapScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false); // 모달 창 표시 여부
   const [signalList, setSignalList] = useState<Signal[]>([]); // 현재 signal 리스트 상태
   const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
-  const [routeModalVisible, setRouteModalVisible] = useState(true);
+  const [routeModalVisible, setRouteModalVisible] = useState(false); // RouteModal 표시 여부
   const [isWalking, setIsWalking] = useState(false); // 산책 중 여부
+  const [signalModalVisible, setSignalModalVisible] = useState(false);
+  const [signalMapModalVisible, setSignalMapModalVisible] = useState(false);
+  const [selectedInProgressSignal, setSelectedInProgressSignal] = useState<Signal | null>(null);
+  const [activeSession, setActiveSession] = useState(null); // 활성화된 산책 세션
+  const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
 
   const containerStyle = {
     width: "100%",
@@ -120,32 +127,53 @@ export default function MapScreen() {
 
   // PENDING 시그널 데이터 가져오기
   useEffect(() => {
+    // 최초 1회 즉시 실행
     const fetchSignals = async () => {
       try {
         const signals = await getAllSignals();
         setSignalList(signals);
       } catch (error) {
-        console.error(
-          "PENDING 시그널 데이터를 가져오는데 실패했습니다:",
-          error
-        );
+        console.error("PENDING 시그널 데이터를 가져오는데 실패했습니다:", error);
       }
     };
+
+    fetchSignals(); // mount 시 1회
+
+    // 1초마다 polling
+    const interval = setInterval(fetchSignals, 1000);
+
     // 사용자 데이터 가져오기
-    const fetchUserData = async () => {
+    const fetchUserDataAndSession = async () => {
       try {
-        // AsyncStorage에서 사용자 정보 가져오기
+        // 사용자 정보 가져오기
         const storedData = await AsyncStorage.getItem("userData");
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           setUserData(parsedData);
+
+          // 활성화된 산책 세션 확인
+          const session = await getActiveWalkSession(parsedData.userId);
+          if (session && session.id) {
+            setActiveSession(session);
+            setSessionId(session.id);
+            setIsWalking(true);
+            setRouteModalVisible(false);
+          } else {
+            setActiveSession(null);
+            setIsWalking(false);
+            setRouteModalVisible(true); // RouteModal(혹은 SignalModal) 표시
+          }
         }
       } catch (error) {
-        console.error("사용자 데이터를 가져오는데 실패했습니다:", error);
+        console.error("유저/세션 데이터 가져오기 실패:", error);
       }
     };
-    fetchSignals();
-    fetchUserData();
+    fetchUserDataAndSession();
+
+    // 언마운트 시 인터벌 해제
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   // 내가 응답한 IN_PROGRESS 시그널 데이터 가져오기
@@ -208,22 +236,37 @@ export default function MapScreen() {
   //   }
   // };
 
-  // 마커 클릭 시
-  const handleMarkerClick = (signal: Signal) => {
+  // PENDING 마커 클릭 시
+  const handlePendingMarkerClick = (signal: Signal) => {
     setSelectedSignal(signal);
-    setModalVisible(true);
+    setSignalModalVisible(true);
   };
 
-  // signal 수락 시 상태를 "accepted"로 변경
-  const handleAccept = () => {
-    if (!selectedSignal) return;
+  // IN_PROGRESS 마커 클릭 시
+   const handleInProgressMarkerClick = (signal: Signal) => {
+    setSelectedInProgressSignal(signal);
+    setSignalMapModalVisible(true);
+  };
+
+  // signal 수락 시 상태를 "IN_PROGRESS"로 변경
+  const handleAccept = async () => {
+  if (!selectedSignal || !userData?.userId) return;
+
+  try {
+    await acceptSignal(selectedSignal.id, userData.userId); // 백엔드 호출
+
     setSignalList((prev) =>
       prev.map((s) =>
         s.id === selectedSignal.id ? { ...s, status: "IN_PROGRESS" } : s
       )
     );
+
     setModalVisible(false);
-  };
+  } catch (error) {
+    console.error("Signal 수락 실패:", error);
+    // TODO: 사용자에게 오류 안내 UI 필요 시 처리
+  }
+};
 
   // Handle modal cancel/close
   const handleCancel = () => {
@@ -261,18 +304,22 @@ export default function MapScreen() {
     }
   };
 
-  // RouteModal의 Take Route 버튼 핸들러
-  const handleTakeRoute = async () => {
-    try {
-      // userData 등 필요한 정보 전달
-      await startWalkSession(userData); // userData는 이미 state에 있음
-      setRouteModalVisible(false);
-      setIsWalking(true);
-    } catch (error) {
-      console.error("산책 시작에 실패했습니다:", error);
-      // 필요시 에러 안내
-    }
-  };
+  // RouteModal의 Take Route 버튼 핸들러 - routeId BE에서 받아온 이후 사용
+  // const handleTakeRoute = async () => {
+  //   if (!userData?.userId || !recommendedRoute?.routeId) return;
+  //   try {
+  //     const session = await startWalkSession({
+  //       userId: userData.userId,
+  //       routeId: recommendedRoute.routeId,
+  //     });
+  //     setActiveSession(session);
+  //     setSessionId(session.id);
+  //     setIsWalking(true);
+  //     setRouteModalVisible(false);
+  //   } catch (error) {
+  //     console.error("산책 시작에 실패했습니다:", error);
+  //   }
+  // };
 
   // 경로 좌표 배열 생성 함수
   const getRoutePath = () => {
@@ -290,6 +337,31 @@ export default function MapScreen() {
     return path;
   };
 
+  const handleAcceptSignal = async (signalId: number) => {
+    if (!selectedSignal || !userData?.userId) return;
+    try {
+      await acceptSignal(signalId, { userId: userData.userId });
+      setSignalModalVisible(false);
+      // 필요하다면 signalList 갱신 등 추가 작업
+    } catch (error) {
+      console.error("Signal 수락 실패:", error);
+    }
+  };
+
+  const handleFinishWalk = async () => {
+    if (!sessionId || !userData?.userId) return;
+    try {
+      await endWalkSession(sessionId, { userId: userData.userId });
+      setIsWalking(false);
+      setActiveSession(null);
+      setSessionId(null);
+      // 홈으로 이동
+      router.replace("/home");
+    } catch (error) {
+      console.error("산책 종료 실패:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -302,9 +374,7 @@ export default function MapScreen() {
         {isWalking && (
           <TouchableOpacity
             style={styles.finishBtn}
-            onPress={() => {
-              // HACK: finish walk 로직
-            }}
+            onPress={handleFinishWalk}
           >
             <Text style={styles.finishBtnText}>Finish Walk</Text>
           </TouchableOpacity>
@@ -323,7 +393,7 @@ export default function MapScreen() {
       zoom={16}
       options={{
         disableDefaultUI: true,
-        zoomControl: true,
+        zoomControl: false,
         scaleControl: true,
         gestureHandling: "greedy", // 모바일에서 제스처 허용
         fullscreenControl: false,  
@@ -347,7 +417,7 @@ export default function MapScreen() {
           <Marker
             key={`pending-${signal.id}`}
             position={{ lat: signal.lat, lng: signal.lng }}
-            onClick={() => handleMarkerClick(signal)}
+            onClick={() => handlePendingMarkerClick(signal)}
             icon={{
               url: getIcon(signal.categoryId),
               scaledSize: new window.google.maps.Size(80, 80),
@@ -360,7 +430,7 @@ export default function MapScreen() {
           <Marker
             key={`my-${signal.id}`}
             position={{ lat: signal.lat, lng: signal.lng }}
-            onClick={() => handleMarkerClick(signal)}
+            onClick={() => handleInProgressMarkerClick(signal)}
             icon={{
               url: getIcon(signal.categoryId),
               scaledSize: new window.google.maps.Size(120, 120),
@@ -373,7 +443,7 @@ export default function MapScreen() {
           <Polyline
             path={getRoutePath()}
             options={{
-              strokeColor: "#00C851",
+              strokeColor: "#336666",
               strokeOpacity: 0.8,
               strokeWeight: 5,
             }}
@@ -382,12 +452,25 @@ export default function MapScreen() {
       </GoogleMap>
     )}
 
-    {/* RouteModal: 처음에만 표시, Take Route 누르면 닫힘 */}
-    {routeModalVisible && (
-      <RouteModal
-        themeId={1}
-        distance={1}
-        onPress={handleTakeRoute}
+    {/* RouteModal: 처음에만 표시, Take Route 누르면 닫힘 - routeId BE에서 받아온 이후 사용
+      {routeModalVisible && (
+        <RouteModal
+          themeId={1}
+          distance={1}
+          onPress={handleTakeRoute}
+        />
+      )}
+    */}
+
+    {/* SignalModal: 처음에만 표시, Accept 누르면 닫힘 */}
+    {signalModalVisible && selectedSignal && (
+      <SignalModal
+        visible={true}
+        onPress={handleAcceptSignal}
+        onClose={() => setSignalModalVisible(false)}
+        data={selectedSignal}
+        buttonText="Accept"
+        isAccept={true}
       />
     )}
   </View>

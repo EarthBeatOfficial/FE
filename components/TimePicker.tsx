@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   timeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.darkGray.main,
   },
   overlay: {

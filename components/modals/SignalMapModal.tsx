@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
-import { useEffect, useState } from "react";
-import { Modal, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 // other comps
 import CountdownTimer from "../CountdownTimer";

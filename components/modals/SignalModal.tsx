@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import CountdownTimer from "../CountdownTimer";
 import GlobalButton from "../GlobalButton";
 import GlobalInput from "../GlobalInput";
 import SignalIcon from "../SignalIcon";
 import { ThemedText } from "../ThemedText";
 import BottomSheetModal from "./BottomSheetModal";
 import ModalSection from "./ModalSection";
-import CountdownTimer from "../CountdownTimer";
 
 // icon / constants
-import TimeIcon from "@/assets/icons/time.png";
 import { colors } from "../../constants/colors";
 import signalTypes, { SignalType } from "../../constants/signalTypes";
 
 interface SignalModalProps {
+  visible: boolean;
   countdown?: any;
   onPress: (id: number) => void;
   onClose: () => void;
@@ -31,6 +31,7 @@ interface SignalModalProps {
 }
 
 const SignalModal = ({
+  visible,
   onPress,
   onClose,
   data,
@@ -51,7 +52,7 @@ const SignalModal = ({
       }
     };
     fetchCategory();
-  }, []);
+  }, [data]);
 
   const handleMessage = (value: string) => {
     setMessage(value);
@@ -59,7 +60,7 @@ const SignalModal = ({
 
   return (
     <>
-      <BottomSheetModal isVisible isCancelButton onClose={onClose} height={555}>
+      <BottomSheetModal isVisible={visible} isCancelButton onClose={onClose} height={555}>
         <View style={styles.top}>
           <SignalIcon
             signal={signalType}
@@ -98,7 +99,7 @@ const SignalModal = ({
         <GlobalButton
           text={buttonText}
           onPress={() => onPress(data?.id)}
-          disabled={message === ""}
+          disabled={isAccept ? false : message === ""}
         />
       </BottomSheetModal>
     </>

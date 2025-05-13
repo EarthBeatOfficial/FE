@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Image, ScrollView, View } from "react-native";
 
 // comps
@@ -94,15 +94,15 @@ export default function NicknameScreen() {
             <Image
               source={logo}
               style={{
-                width: 280,
-                height: 355,
+                width: 250,
+                height: 320,
                 resizeMode: "contain",
                 alignSelf: "center",
               }}
             />
             <ThemedText
               type="bold"
-              style={{ fontSize: 25, textAlign: "center" }}
+              style={{ fontSize: 20, textAlign: "center" }}
             >
               What should we call you?
             </ThemedText>
@@ -111,7 +111,7 @@ export default function NicknameScreen() {
                 style={{
                   textAlign: "center",
                   color: colors.red.main,
-                  fontSize: 18,
+                  fontSize: 14,
                 }}
               >
                 {errorMessage ? errorMessage : " This nickname already exists."}
@@ -123,7 +123,7 @@ export default function NicknameScreen() {
                 style={{
                   textAlign: "center",
                   color: colors.text.gray,
-                  fontSize: 18,
+                  fontSize: 14,
                 }}
               >
                 Please provide a unique nickname
