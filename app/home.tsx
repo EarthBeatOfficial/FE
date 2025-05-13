@@ -24,6 +24,7 @@ import { ThemedText } from "../components/ThemedText";
 import TimePicker from "../components/TimePicker";
 
 // constants
+import { GOOGLE_API_KEY } from "@/constants/tokens";
 import walkThemes from "@/constants/walkThemes";
 import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
@@ -81,12 +82,12 @@ export default function HomeScreen() {
 
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
-  const GOOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
+  // Fetch places on Autocomplete through Google Maps API
   const fetchPlaceSuggestions = async (input: string) => {
     try {
       const response = await fetch(
-        `/api/autocomplete?input=${encodeURIComponent(input)}`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${GOOGLE_API_KEY}&language=en`
       );
       const json = await response.json();
       setPlaceSuggestions(json.predictions);
@@ -102,15 +103,6 @@ export default function HomeScreen() {
         lat: value.lat,
         lng: value.lng,
       });
-      //   try {
-      //     const response = await fetch(
-      //       `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${value}&key=${GOOOGLE_API_KEY}&language=en`
-      //     );
-      //     const json = await response.json();
-      //     setPlaceSuggestions(json.predictions);
-      //   } catch (err) {
-      //     console.error("Error fetching Google Places:", err);
-      //   }
     } else {
       setSignalData({
         ...signalData,
@@ -121,7 +113,7 @@ export default function HomeScreen() {
 
   const handleSelect = async (placeId: string) => {
     const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOOGLE_API_KEY}`
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_API_KEY}`
     );
     const json = await res.json();
     if (json.result.geometry.location) {
@@ -166,25 +158,24 @@ export default function HomeScreen() {
 
   const generateWalkTrail = async () => {
     setIsLoading(true);
-    try {
-      const resp = await recommendRoute({
-        userId: userData?.userId,
-        location: trailData?.location,
-        themeId: trailData?.themeId,
-        distance: trailData?.distance,
-      });
-      // Store trailData in redux to use it in a modal in map.tsx
-      dispatch(setRecommendedRoute(resp));
-    } catch (error: any) {
-      console.log("Error generating a route recommendation", error);
-    } finally {
-      setIsLoading(false);
-      router.push("/map");
-    }
-
-    if (trailData?.location) {
+    if (trailData?.location !== "") {
+      try {
+        const resp = await recommendRoute({
+          userId: userData?.userId,
+          location: trailData?.location,
+          themeId: trailData?.themeId,
+          distance: trailData?.distance,
+        });
+        // Store trailData in redux to use it in a modal in map.tsx
+        dispatch(setRecommendedRoute(resp));
+      } catch (error: any) {
+        console.log("Error generating a route recommendation", error);
+      } finally {
+        setIsLoading(false);
+        router.push("/map");
+      }
     } else {
-      // ADD could not generate UI
+      console.log("Location was not found");
     }
   };
 
