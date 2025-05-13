@@ -1,13 +1,14 @@
+import { DirectionsService, GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from 'react-redux';
-import { getAllSignals, getMySignals } from "../api/signalApi";
 import { RootState } from '../store/store';
 
-const { width, height } = Dimensions.get('window');
+import { getAllSignals, getMySignals } from "../api/signalApi";
+
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * <TODO>
@@ -36,52 +37,74 @@ interface Signal {
   expiresAt: string;
 }
 
-const INITIAL_REGION = {
-  latitude: 37.544582,
-  longitude: 127.037589,
-  latitudeDelta: 0.01,
-  longitudeDelta: 0.01,
+// 기본 경로 설정 (추후 Redux에서 데이터가 없을 경우 사용)
+const MOCK_DIRECTIONS_REQUEST = {
+  origin: { lat: 37.544582, lng: 127.037589 },
+  destination: { lat: 37.58000, lng: 127.035589 },
+  waypoints: [
+    { location: { lat: 37.546070, lng: 127.038879 } },
+    { location: { lat: 37.549907, lng: 127.033275 } },
+    { location: { lat: 37.531693, lng: 127.066134 } }
+  ],
+  travelMode: "WALKING" as google.maps.TravelMode,
+};
+
+const containerStyle = {
+  width: "100%",
+  height: "100%",
 };
 
 export default function MapScreen() {
-  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [signalList, setSignalList] = useState<Signal[]>([]);
-  const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]);
+  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null); // 선택된 signal
+  const [modalVisible, setModalVisible] = useState<boolean>(false);         // 모달 창 표시 여부
+  const [signalList, setSignalList] = useState<Signal[]>([]);          // 현재 signal 리스트 상태
+  const [myProgressSignals, setMyProgressSignals] = useState<Signal[]>([]); // 내가 응답한 IN_PROGRESS 시그널
+  const [allSignals, setAllSignals] = useState<Signal[]>([]); // 모든 시그널을 합친 리스트
+  
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const [mapRegion, setMapRegion] = useState(INITIAL_REGION);
-  const [userData, setUserData] = useState<{ userId: number; nickname: string } | null>(null);
-  const [routeCoords, setRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 37.544582, lng: 127.037589 });
+  const [userData, setUserData] = useState<{
+      userId: number;
+      nickname: string;
+    } | null>(null);
 
   const router = useRouter();
-  const recommendedRoute = useSelector((state: RootState) => state.route?.recommendedRoute);
+   // call the recommended route through redux
+  const recommendedRoute = useSelector(
+    (state: RootState) => state.route?.recommendedRoute
+  );
+
+  const { isLoaded } = useJsApiLoader({
+  googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+});
 
   // 현재 위치 추적
   useEffect(() => {
-    (async () => {
-      // 위치 권한 요청 및 현재 위치 가져오기
-      try {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude, longitude } = pos.coords;
-            setCurrentPosition({ lat: latitude, lng: longitude });
-            setMapRegion({
-              latitude,
-              longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            });
-          },
-          (err) => {
-            console.warn("위치 정보를 가져올 수 없습니다.", err);
-          },
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-        );
-      } catch (e) {
-        console.warn("위치 권한 오류", e);
-      }
-    })();
-  }, []);
+  if (!isLoaded || !navigator.geolocation) return;
+
+  const watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      setCurrentPosition({ lat: latitude, lng: longitude });
+      setMapCenter({ lat: latitude, lng: longitude });
+    },
+    (err) => {
+      console.warn("위치 정보를 가져올 수 없습니다.", err);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000, // 10초
+    }
+  );
+
+  // cleanup 함수 반환
+  return () => {
+    navigator.geolocation.clearWatch(watchId);
+  };
+}, [isLoaded]);
+
 
   // PENDING 시그널 데이터 가져오기
   useEffect(() => {
@@ -93,6 +116,7 @@ export default function MapScreen() {
         console.error('PENDING 시그널 데이터를 가져오는데 실패했습니다:', error);
       }
     };
+
     fetchSignals();
   }, []);
 
@@ -100,6 +124,7 @@ export default function MapScreen() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        // AsyncStorage에서 사용자 정보 가져오기
         const storedData = await AsyncStorage.getItem("userData");
         if (storedData) {
           const parsedData = JSON.parse(storedData);
@@ -109,6 +134,7 @@ export default function MapScreen() {
         console.error("사용자 데이터를 가져오는데 실패했습니다:", error);
       }
     };
+
     fetchUserData();
   }, []);
 
@@ -116,6 +142,7 @@ export default function MapScreen() {
   useEffect(() => {
     const fetchMySignals = async () => {
       if (!userData?.userId) return;
+      
       try {
         const mySignals = await getMySignals(userData.userId);
         setMyProgressSignals(mySignals);
@@ -123,26 +150,57 @@ export default function MapScreen() {
         console.error('내가 응답한 IN_PROGRESS 시그널 데이터를 가져오는데 실패했습니다:', error);
       }
     };
+
     fetchMySignals();
   }, [userData]);
 
-  // 추천 루트가 변경될 때 Polyline 좌표 업데이트
+  // signalList와 myProgressSignals가 변경될 때마다 모든 시그널 목록 업데이트
   useEffect(() => {
-    if (recommendedRoute) {
-      const coords = [
-        recommendedRoute.origin,
-        ...recommendedRoute.waypoints.map((wp: any) => wp.location),
-        recommendedRoute.destination,
-      ].map((p: any) => ({ latitude: p.lat, longitude: p.lng }));
-      setRouteCoords(coords);
-      setMapRegion({
-        latitude: recommendedRoute.origin.lat,
-        longitude: recommendedRoute.origin.lng,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
+    // 두 배열 결합 (중복 제거)
+    const combinedSignals = [...signalList];
+    
+    // myProgressSignals 중 signalList에 없는 항목만 추가
+    myProgressSignals.forEach(mySignal => {
+      const exists = combinedSignals.some(signal => signal.id === mySignal.id);
+      if (!exists) {
+        combinedSignals.push(mySignal);
+      }
+    });
+    
+    // resolved 상태의 시그널 제외
+    const filteredSignals = combinedSignals.filter(signal => signal.status !== "RESOLVED");
+    
+    setAllSignals(filteredSignals);
+  }, [signalList, myProgressSignals]);
+
+  // recommendedRoute가 변경될 때마다 경로와 지도 중심 업데이트
+  useEffect(() => {
+  if (!isLoaded || !recommendedRoute) return;
+
+  const directionsService = new window.google.maps.DirectionsService();
+
+  const directionsRequest = {
+    ...recommendedRoute,
+    travelMode: google.maps.TravelMode.WALKING,
+  };
+
+  directionsService.route(directionsRequest, (result, status) => {
+    if (status === "OK" && result) {
+      setDirections(result);
+      setMapCenter(recommendedRoute.origin);
+    } else {
+      console.error("DirectionsService 실패:", status);
     }
-  }, [recommendedRoute]);
+  });
+}, [recommendedRoute, isLoaded]);
+
+
+  // DirectionsService 요청 결과 처리
+  const directionsCallback = (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+    if (status === "OK" && result) {
+      setDirections(result);
+    }
+  };
 
   // 마커 클릭 시
   const handleMarkerClick = (signal: Signal) => {
@@ -150,7 +208,7 @@ export default function MapScreen() {
     setModalVisible(true);
   };
 
-  // signal 수락 시 상태를 "accepted"로 변경
+ // signal 수락 시 상태를 "accepted"로 변경
   const handleAccept = () => {
     if (!selectedSignal) return;
     setSignalList((prev) =>
@@ -166,84 +224,39 @@ export default function MapScreen() {
     setModalVisible(false);
   };
 
-  // Return icon require path based on signal type
-  const getIcon = (categoryId: number, isMySignal = false) => {
-    // 커스텀 마커 이미지를 직접 프로젝트에 추가해야 함
-    // 예시: assets/markers/category-plant.png, assets/markers/category-plant-large.png
+  // Return icon URL based on signal type
+  const getIcon = (categoryId: number) => {
+    const baseUrl = 'https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/';
+  
     switch (categoryId) {
-      case 1:
-        return isMySignal
-          ? require("../assets/markers/category-plant-large.png")
-          : require("../assets/markers/category-plant.png");
-      case 2:
-        return isMySignal
-          ? require("../assets/markers/category-repair-large.png")
-          : require("../assets/markers/category-repair.png");
-      case 3:
-        return isMySignal
-          ? require("../assets/markers/category-delivery-large.png")
-          : require("../assets/markers/category-delivery.png");
-      // ... 나머지 카테고리도 동일하게 추가
+      case 1 : // 'Water Plants / Plant - Related'
+        return `${baseUrl}category-plant.png`;
+      case 2 : // 'Repair / Tools'
+        return `${baseUrl}category-repair.png`;
+      case 3 : // 'Delivery'
+        return `${baseUrl}category-delivery.png`;
+      case 4 : // 'Catch the Bug'
+        return `${baseUrl}category-bug.png`;
+      case 5 : // 'Translate'
+        return `${baseUrl}category-translate.png`;
+      case 6 : // 'Pet-Related'
+        return `${baseUrl}category-pet.png`;
+      case 7 : // 'Lend / Borrow Batteries'
+        return `${baseUrl}category-battery.png`;
+      case 8 : // 'Lost & Found'
+        return `${baseUrl}category-find.png`;
+      case 9 : // 'Take picture(s)'
+        return `${baseUrl}category-picture.png`;
+      case 10 : // 'etc.'
+        return `${baseUrl}category-etc.png`;
       default:
-        return isMySignal
-          ? require("../assets/markers/category-default-large.png")
-          : require("../assets/markers/category-default.png");
+        return `${baseUrl}category-default.png`;
     }
-  };
+  };  
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
-        {/* 백버튼 */}
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/home")}> 
-          <Text style={styles.backBtnText}>{"<"}</Text>
-        </TouchableOpacity>
-        {/* Finish Walk 버튼 */}
-        <TouchableOpacity style={styles.finishBtn} onPress={() => {}}>
-          <Text style={styles.finishBtnText}>Finish Walk</Text>
-        </TouchableOpacity>
-        <Image source={require("../assets/images/user-head.png")} style={styles.userIcon} />
-      </View>
-      <MapView
-        style={styles.map}
-        region={mapRegion}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-      >
-        {/* PENDING 시그널 마커 */}
-        {signalList.map((signal) => (
-          <Marker
-            key={`pending-${signal.id}`}
-            coordinate={{ latitude: signal.lat, longitude: signal.lng }}
-            onPress={() => handleMarkerClick(signal)}
-            image={getIcon(signal.categoryId, false)}
-          />
-        ))}
-        {/* IN_PROGRESS(내가 응답한) 시그널 마커 (더 큰 아이콘) */}
-        {myProgressSignals.map((signal) => (
-          <Marker
-            key={`my-${signal.id}`}
-            coordinate={{ latitude: signal.lat, longitude: signal.lng }}
-            onPress={() => handleMarkerClick(signal)}
-            image={getIcon(signal.categoryId, true)}
-          />
-        ))}
-        {/* 추천 경로 Polyline */}
-        {routeCoords.length > 1 && (
-          <Polyline
-            coordinates={routeCoords}
-            strokeColor="#2d6a4f"
-            strokeWidth={6}
-          />
-        )}
-      </MapView>
-    </View>
-  );
-}
-
+  // Define styles for the screen
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  map: { flex: 1, width: width, height: height },
   topBar: {
     width: "100%",
     height: 56,
@@ -282,3 +295,79 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
   },
 });
+
+  return (
+  <View style={styles.container}>
+    <View style={styles.topBar}>
+      {/* 백버튼 */}
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.push("/home")}>
+        <Text style={styles.backBtnText}>{"<"}</Text>
+      </TouchableOpacity>
+
+      {/* Finish Walk 버튼 */}
+      <TouchableOpacity style={styles.finishBtn} onPress={() => {
+        // HACK: finish walk 로직
+      }}>
+        <Text style={styles.finishBtnText}>Finish Walk</Text>
+      </TouchableOpacity>
+
+      <Image
+        source={require("../assets/images/user-head.png")}
+        style={styles.userIcon}
+      />
+    </View>
+ 
+    {/* map */}
+    {isLoaded && (
+      <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={16}>
+        {/* 현재 위치 마커 */}
+        {currentPosition && (
+          <Marker
+            position={currentPosition}
+            icon={{
+              url: "https://raw.githubusercontent.com/HEEKGH/EARTHBEAT-assets/main/user-location.png",
+              scaledSize: new window.google.maps.Size(30, 30),
+            }}
+          />
+        )}
+
+        {/* PENDING 시그널 마커 */}
+        {signalList.map((signal) => (
+          <Marker
+            key={`pending-${signal.id}`}
+            position={{ lat: signal.lat, lng: signal.lng }}
+            onClick={() => handleMarkerClick(signal)}
+            icon={{
+              url: getIcon(signal.categoryId),
+              scaledSize: new window.google.maps.Size(80, 80),
+            }}
+          />
+        ))}
+
+        {/* IN_PROGRESS 시그널 마커 */}
+        {myProgressSignals.map((signal) => (
+          <Marker
+            key={`my-${signal.id}`}
+            position={{ lat: signal.lat, lng: signal.lng }}
+            onClick={() => handleMarkerClick(signal)}
+            icon={{
+              url: getIcon(signal.categoryId),
+              scaledSize: new window.google.maps.Size(120, 120),
+            }}
+          />
+        ))}
+
+        {/* DirectionsService */}
+        {recommendedRoute && (
+          <DirectionsService
+            options={{
+              ...recommendedRoute,
+              travelMode: google.maps.TravelMode.WALKING,
+            }}
+            callback={directionsCallback}
+          />
+        )}
+      </GoogleMap>
+    )}
+  </View>
+)};
