@@ -21,7 +21,7 @@ const Selector = (props: any) => {
           color: selected ? colors.green.main : colors.text.gray,
         }}
       >
-        {distance !== 0 && distance + `km`} {time}
+        {distance && distance + `km`} {time}
       </Text>
     </Container>
   );
