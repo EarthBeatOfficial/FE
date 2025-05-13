@@ -287,12 +287,12 @@ export default function HomeScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 10,
+              gap: 5,
             }}
           >
             <Image
               source={LogoImage}
-              style={{ width: 45, height: 56, resizeMode: "contain" }}
+              style={{ width: 35, height: 45, resizeMode: "contain" }}
             />
             <Image
               source={LogoText}

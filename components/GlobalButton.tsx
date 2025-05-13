@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, Platform, StyleSheet } from "react-native";
+import { Image, StyleSheet } from "react-native";
 import { Button } from "react-native-paper";
 
 import { colors } from "../constants/colors";
@@ -48,26 +48,27 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 10,
     backgroundColor: colors.green.main,
-    minHeight: Platform.OS === "web" ? 48 : 56,
+    minHeight: 48,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: 0,
+    minWidth: 45,
   },
   iconButton: {
-    borderRadius: 50,
+    borderRadius: "50%",
   },
   disabled: {
     backgroundColor: "rgba(95, 95, 99, 0.3)",
   },
   label: {
-    fontFamily: "Poppins_700Bold",
+    fontFamily: "Poppins_600SemiBold",
     fontSize: 18,
     color: "#fff",
   },
   icon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   disabledLabel: {
     color: colors.darkGray.main,
