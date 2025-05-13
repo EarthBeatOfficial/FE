@@ -115,7 +115,7 @@ export default function MapScreen() {
     {
       enableHighAccuracy: true,
       maximumAge: 0,
-      timeout: 10000, // 10초
+      timeout: 5000, // 5초
     }
   );
 
