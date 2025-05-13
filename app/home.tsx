@@ -55,16 +55,20 @@ export default function HomeScreen() {
   const [numResponds, setNumResponds] = useState(0);
   const [walkLogs, setWalkLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [trailData, setTrailData] = useState({
-    distance: null,
-    themeId: null,
-    location: "",
-  });
   const [responseData, setResponseData] = useState<
     [{ message: string; id: number; signal: { title: string } }]
   >([{ message: "", id: 0, signal: { title: "" } }]);
-  const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
+  const [isPanEnabled, setIsPanEnabled] = useState(true);
+
+  // useStates to handle route recommendation
+  const [trailData, setTrailData] = useState({
+    distance: 0,
+    themeId: null,
+    location: "",
+  });
+  const [isDistanceSelected, setIsDistanceSelected] = useState(false);
+
+  // useStates to handle signal creation
   const [signalData, setSignalData] = useState({
     title: "",
     description: "",
@@ -73,9 +77,11 @@ export default function HomeScreen() {
     timeLimit: 10, // default 10 minutes
     categoryId: null,
   });
-  const [isPanEnabled, setIsPanEnabled] = useState(true);
-  const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
   const [placeSuggestions, setPlaceSuggestions] = useState([]);
+
+  // useStates to handle modals
+  const [showAddSignal, setShowAddSignal] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const today = moment().format("MMMM Do");
@@ -135,9 +141,6 @@ export default function HomeScreen() {
         userId: userData?.userId,
       });
       // store in redux?
-
-      // Set the start time when the signal is created
-      setSignalStartTime(new Date());
 
       // Close the modal
       setShowAddSignal(false);
@@ -276,14 +279,6 @@ export default function HomeScreen() {
     userId: 26,
   };
 
-  const TEST_SUGGESTIONS = [
-    { place_id: "1", description: "My house" },
-    { place_id: "2", description: "Hee's house" },
-    { place_id: "3", description: "Jeff's house" },
-    { place_id: "4", description: "Minjae's house" },
-    { place_id: "5", description: "Wonyeong's house" },
-  ];
-
   return (
     <View style={styles.container}>
       <View style={styles.container}>
@@ -322,9 +317,10 @@ export default function HomeScreen() {
                     data={data}
                     key={key}
                     selected={trailData?.distance === data.distance}
-                    onPress={(distance: any) =>
-                      handleSetTrailData("distance", distance)
-                    }
+                    onPress={(distance: any) => {
+                      handleSetTrailData("distance", distance);
+                      setIsDistanceSelected(true);
+                    }}
                   />
                 );
               })}
@@ -344,7 +340,7 @@ export default function HomeScreen() {
               {walkThemes.map((theme, key) => {
                 return (
                   <ThemeCard
-                    disabled={trailData?.distance === null}
+                    disabled={!isDistanceSelected}
                     theme={theme}
                     key={key}
                     selected={trailData?.themeId === theme.id}
@@ -359,7 +355,7 @@ export default function HomeScreen() {
           <GlobalButton
             text="Start Walking"
             onPress={() => generateWalkTrail()}
-            disabled={trailData?.distance === null || !trailData?.themeId}
+            disabled={!isDistanceSelected || !trailData?.themeId}
           />
           {walkLogs?.length !== 0 && (
             <>
