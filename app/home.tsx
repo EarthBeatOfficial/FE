@@ -21,12 +21,14 @@ import Selector from "../components/Selector";
 import SignalIcon from "../components/SignalIcon";
 import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
+import ThemeIcon from "../components/ThemeIcon";
 import TimePicker from "../components/TimePicker";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
 import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
+import { WalkLog } from "../constants/interfaces";
 import signalTypes from "../constants/signalTypes";
 
 // icons / images
@@ -86,7 +88,6 @@ export default function HomeScreen() {
 
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
-  const GOOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
   const fetchPlaceSuggestions = async (input: string) => {
     try {
@@ -213,13 +214,38 @@ export default function HomeScreen() {
     fetchUserData();
   }, []);
 
+  const WALKLOG_TEST_DATA = [
+    {
+      distance: 1.5,
+      walkedAt: "2025-05-14T15:30:00Z",
+      theme: {
+        id: 1,
+        name: "Nature-focused Walk",
+      },
+      respondedSignals: [
+        {
+          title: "Please help water my plant",
+          description: "I have an ~~~",
+          categoryId: 1,
+          category: "Water Plants / Plant - Related",
+          respondedAt: "2025-05-14T15:35:00Z",
+        },
+      ],
+    },
+  ];
+
   useEffect(() => {
     async function fetchWalkLogData() {
       if (userData && userData?.userId) {
         try {
+          const todaysDate = moment().format();
           const numWalkLogs = await getWalkLogNum(userData?.userId);
           setNumResponds(numWalkLogs);
           const walkLogs = await getWalkLogs(userData?.userId);
+          // TESTING
+          // const walkLogs = WALKLOG_TEST_DATA.find(
+          //   (log: any) => log.walkedAt.slice(0, 10) === todaysDate.slice(0, 10)
+          // );
           setWalkLogs(walkLogs);
         } catch (error) {
           console.error("Error fetching walk log data:", error);
@@ -278,6 +304,13 @@ export default function HomeScreen() {
     themeId: 2,
     userId: 26,
   };
+
+  const todaysLog = WALKLOG_TEST_DATA.map((log: any) => {
+    if (log.walkedAt.slice(0, 10) === moment().format().slice(0, 10))
+      return log;
+  });
+
+  console.log(todaysLog);
 
   return (
     <View style={styles.container}>
@@ -357,23 +390,52 @@ export default function HomeScreen() {
             onPress={() => generateWalkTrail()}
             disabled={!isDistanceSelected || !trailData?.themeId}
           />
-          {walkLogs?.length !== 0 && (
+          {/* {walkLogs?.length !== 0 && ( */}
+          {todaysLog?.length !== 0 && (
             <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <ThemedText style={{ fontSize: 25, color: colors.green.main }}>
+              <View style={styles.listItems}>
+                <ThemedText style={{ fontSize: 18, color: colors.green.main }}>
                   Today, {today}
                 </ThemedText>
-                <ThemedText type="light" style={{ color: colors.text.gray }}>
+                <ThemedText
+                  type="light"
+                  style={{ color: colors.text.gray, fontSize: 12 }}
+                >
                   {day}
                 </ThemedText>
               </View>
-              <View style={styles.listContainer}></View>
+              <View style={styles.listContainer}>
+                {todaysLog.map((log: WalkLog) => {
+                  const { id, name } = log.theme;
+                  return (
+                    <>
+                      <View>
+                        <View style={styles.listItems}>
+                          <ThemeIcon themeId={id} />
+                          <ThemedText>
+                            {name} - {log.distance}km
+                          </ThemedText>
+                        </View>
+                        {log.respondedSignals?.length > 0 &&
+                          log.respondedSignals.map((item, key) => {
+                            const { title } = item;
+                            const category = signalTypes.find(
+                              (sig) => sig.id === item.categoryId
+                            );
+                            return (
+                              <>
+                                <View>
+                                  {/* <SignalIcon key={key} signal={category} /> */}
+                                  <ThemedText>{title}</ThemedText>
+                                </View>
+                              </>
+                            );
+                          })}
+                      </View>
+                    </>
+                  );
+                })}
+              </View>
             </>
           )}
         </ParallaxScrollView>
@@ -622,5 +684,10 @@ const styles = StyleSheet.create({
     bottom: 15,
     right: 15,
     zIndex: 1000,
+  },
+  listItems: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
   },
 });
