@@ -4,6 +4,8 @@ import React, { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
@@ -23,7 +25,6 @@ import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
 import ThemeIcon from "../components/ThemeIcon";
 import TimePicker from "../components/TimePicker";
-import SignalModal from "../components/modals/SignalModal";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
@@ -38,7 +39,7 @@ import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
 
 // Redux
-import { setRecommendedRoute } from "@/redux/routeSlice";
+import { setRecommendedRoute } from "@/redux/slices/routeSlice";
 import { useDispatch } from "react-redux";
 
 // API
@@ -89,6 +90,8 @@ export default function HomeScreen() {
 
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
+
+  const walkStatus = useSelector((state: RootState) => state.walk.status);
 
   // Fetch places on Autocomplete through Google Maps API
   const fetchPlaceSuggestions = async (input: string) => {
@@ -156,20 +159,7 @@ export default function HomeScreen() {
   };
 
   const generateWalkTrail = async () => {
-    setIsLoading(true);
-    try {
-      const resp = await recommendRoute({
-        userId: userData?.userId,
-        location: trailData?.location,
-        themeId: trailData?.themeId,
-        distance: trailData?.distance,
-      });
-      // Store trailData in redux to use it in a modal in map.tsx
-      dispatch(setRecommendedRoute(resp));
-    } catch (error: any) {
-      console.log("Error generating a route recommendation", error);
-    } finally {
-      setIsLoading(false);
+    if (walkStatus === "IN_PROGRESS") {
       router.push({
         pathname: "/map",
         params: {
@@ -177,6 +167,29 @@ export default function HomeScreen() {
           themeId: trailData?.themeId,
         },
       });
+    } else {
+      setIsLoading(true);
+      try {
+        const resp = await recommendRoute({
+          userId: userData?.userId,
+          location: trailData?.location,
+          themeId: trailData?.themeId,
+          distance: trailData?.distance,
+        });
+        // Store trailData in redux to use it in a modal in map.tsx
+        dispatch(setRecommendedRoute(resp));
+      } catch (error: any) {
+        console.log("Error generating a route recommendation", error);
+      } finally {
+        setIsLoading(false);
+        router.push({
+          pathname: "/map",
+          params: {
+            distance: trailData?.distance,
+            themeId: trailData?.themeId,
+          },
+        });
+      }
     }
 
     if (trailData?.location) {
@@ -333,6 +346,17 @@ export default function HomeScreen() {
     userId: 26,
   };
 
+  const getButtonText = () => {
+    switch (walkStatus) {
+      case "IN_PROGRESS":
+        return "Resume Walking";
+      case "COMPLETED":
+        return "Start Walking";
+      default:
+        return "Start Walking";
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.container}>
@@ -407,7 +431,7 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
           <GlobalButton
-            text="Start Walking"
+            text={getButtonText()}
             onPress={() => generateWalkTrail()}
             disabled={!isDistanceSelected || !trailData?.themeId}
           />
