@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Modal,
   ScrollView,
@@ -30,6 +31,7 @@ const AutoCompleteModal: React.FC<AutoCompleteModalProps> = ({
   const [input, setInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (text: string) => {
     setInput(text);
@@ -46,6 +48,7 @@ const AutoCompleteModal: React.FC<AutoCompleteModalProps> = ({
   const handleSubmit = () => {
     fetchSuggestions(input);
     setShowSuggestions(true);
+    setIsLoading(true);
   };
 
   const handleSelect = (item: { place_id: string; description: string }) => {
@@ -54,6 +57,12 @@ const AutoCompleteModal: React.FC<AutoCompleteModalProps> = ({
     setShowSuggestions(false);
     onSelect(item.place_id);
   };
+
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      setIsLoading(false);
+    }
+  }, [suggestions]);
 
   return (
     <>
@@ -82,7 +91,11 @@ const AutoCompleteModal: React.FC<AutoCompleteModalProps> = ({
           onPress={() => setShowSuggestions(false)}
         >
           <View style={styles.pickerContainer}>
-            {suggestions?.length > 0 ? (
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.green.main} />
+              </View>
+            ) : suggestions?.length > 0 ? (
               <View style={styles.suggestionList}>
                 <ScrollView>
                   {suggestions.map((item, key) => {
@@ -182,6 +195,11 @@ const styles = StyleSheet.create({
     gap: 10,
     width: "100%",
     flex: 1,
+  },
+  loadingContainer: {
+    height: 120,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 

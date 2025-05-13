@@ -24,7 +24,6 @@ import { ThemedText } from "../components/ThemedText";
 import TimePicker from "../components/TimePicker";
 
 // constants
-import { GOOGLE_API_KEY } from "@/constants/tokens";
 import walkThemes from "@/constants/walkThemes";
 import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
@@ -40,12 +39,11 @@ import { setRecommendedRoute } from "@/redux/routeSlice";
 import { useDispatch } from "react-redux";
 
 // API
+import { getAutoCompleteSet, getPlaceDetail } from "@/api/autocompleteApi";
 import { getResponses, markResponseAsRead } from "@/api/responsesApi";
 import { recommendRoute } from "@/api/routesApi";
 import { createSignal } from "@/api/signalApi";
 import { getWalkLogNum, getWalkLogs } from "@/api/walkLogApi";
-
-// for testing
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -86,11 +84,8 @@ export default function HomeScreen() {
   // Fetch places on Autocomplete through Google Maps API
   const fetchPlaceSuggestions = async (input: string) => {
     try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${GOOGLE_API_KEY}&language=en`
-      );
-      const json = await response.json();
-      setPlaceSuggestions(json.predictions);
+      const response = await getAutoCompleteSet(input);
+      setPlaceSuggestions(response.predictions);
     } catch (err) {
       console.error("Error fetching Google Places:", err);
     }
@@ -112,15 +107,12 @@ export default function HomeScreen() {
   };
 
   const handleSelect = async (placeId: string) => {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_API_KEY}`
-    );
-    const json = await res.json();
-    if (json.result.geometry.location) {
+    const res = await getPlaceDetail(placeId);
+    if (res.location) {
       setSignalData({
         ...signalData,
-        lat: json.result.geometry.location.lat,
-        lng: json.result.geometry.location.lng,
+        lat: res.location.lat,
+        lng: res.location.lng,
       });
     }
   };
@@ -197,6 +189,7 @@ export default function HomeScreen() {
     async function getCurrentLocation() {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
+        console.log("Permission to access location was denied");
         return;
       }
       let location = await Location.getCurrentPositionAsync({});
@@ -206,6 +199,9 @@ export default function HomeScreen() {
           ...trailData,
           location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
         });
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
       }
     }
 
@@ -296,7 +292,6 @@ export default function HomeScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 10,
-              paddingTop: 10,
             }}
           >
             <Image
@@ -397,12 +392,11 @@ export default function HomeScreen() {
         isPanEnabled={isPanEnabled}
         onPressAction={generateSignal}
         disabled={
-          !signalData.categoryId &&
-          !signalData.description &&
-          !signalData.lat &&
-          !signalData.lng &&
-          !signalData.timeLimit &&
-          !signalData.title
+          signalData.title === "" ||
+          signalData.description === "" ||
+          !signalData.lat ||
+          !signalData.lng ||
+          !signalData.categoryId
         }
       >
         <ModalSection style={{ marginBottom: 16 }}>
