@@ -232,6 +232,23 @@ export default function HomeScreen() {
         },
       ],
     },
+    {
+      distance: 1.5,
+      walkedAt: "2025-05-14T15:30:00Z",
+      theme: {
+        id: 3,
+        name: "Pet-based Walk",
+      },
+      respondedSignals: [
+        {
+          title: "Please help water my plant",
+          description: "I have an ~~~",
+          categoryId: 1,
+          category: "Water Plants / Plant - Related",
+          respondedAt: "2025-05-14T15:35:00Z",
+        },
+      ],
+    },
   ];
 
   useEffect(() => {
@@ -242,11 +259,13 @@ export default function HomeScreen() {
           const numWalkLogs = await getWalkLogNum(userData?.userId);
           setNumResponds(numWalkLogs);
           const walkLogs = await getWalkLogs(userData?.userId);
-          // TESTING
-          // const walkLogs = WALKLOG_TEST_DATA.find(
-          //   (log: any) => log.walkedAt.slice(0, 10) === todaysDate.slice(0, 10)
-          // );
-          setWalkLogs(walkLogs);
+          if (walkLogs?.length > 0) {
+            const todaysLogs = walkLogs.find(
+              (log: any) =>
+                log.walkedAt.slice(0, 10) === todaysDate.slice(0, 10)
+            );
+            setWalkLogs(todaysLogs);
+          }
         } catch (error) {
           console.error("Error fetching walk log data:", error);
         }
@@ -304,13 +323,6 @@ export default function HomeScreen() {
     themeId: 2,
     userId: 26,
   };
-
-  const todaysLog = WALKLOG_TEST_DATA.map((log: any) => {
-    if (log.walkedAt.slice(0, 10) === moment().format().slice(0, 10))
-      return log;
-  });
-
-  console.log(todaysLog);
 
   return (
     <View style={styles.container}>
@@ -390,8 +402,7 @@ export default function HomeScreen() {
             onPress={() => generateWalkTrail()}
             disabled={!isDistanceSelected || !trailData?.themeId}
           />
-          {/* {walkLogs?.length !== 0 && ( */}
-          {todaysLog?.length !== 0 && (
+          {walkLogs?.length !== 0 && (
             <>
               <View style={styles.listItems}>
                 <ThemedText style={{ fontSize: 18, color: colors.green.main }}>
@@ -404,38 +415,60 @@ export default function HomeScreen() {
                   {day}
                 </ThemedText>
               </View>
-              <View style={styles.listContainer}>
-                {todaysLog.map((log: WalkLog) => {
-                  const { id, name } = log.theme;
-                  return (
-                    <>
-                      <View>
-                        <View style={styles.listItems}>
-                          <ThemeIcon themeId={id} />
-                          <ThemedText>
-                            {name} - {log.distance}km
-                          </ThemedText>
-                        </View>
-                        {log.respondedSignals?.length > 0 &&
-                          log.respondedSignals.map((item, key) => {
-                            const { title } = item;
-                            const category = signalTypes.find(
-                              (sig) => sig.id === item.categoryId
-                            );
-                            return (
-                              <>
-                                <View>
-                                  {/* <SignalIcon key={key} signal={category} /> */}
-                                  <ThemedText>{title}</ThemedText>
+              <ScrollView style={styles.listContainer}>
+                {walkLogs?.length !== 0 &&
+                  walkLogs?.map((log: WalkLog) => {
+                    const { id, name } = log.theme;
+                    return (
+                      <>
+                        <View style={{ paddingBottom: 15 }}>
+                          <View style={styles.listItems}>
+                            <ThemeIcon themeId={id} />
+                            <ThemedText>
+                              {name} - {log.distance}km
+                            </ThemedText>
+                          </View>
+                          {log.respondedSignals?.length > 0 &&
+                            log.respondedSignals.map((item, key) => {
+                              const { title, description } = item;
+                              const category = signalTypes.find(
+                                (sig) => sig.id === item.categoryId
+                              );
+                              return (
+                                <View style={{ marginLeft: 50 }}>
+                                  <View style={styles.listItems}>
+                                    <SignalIcon
+                                      key={key}
+                                      signal={category}
+                                      size={25}
+                                      imgSize={18}
+                                    />
+                                    <ThemedText
+                                      style={{
+                                        color: colors.darkGray.main,
+                                        fontSize: 12,
+                                      }}
+                                    >
+                                      {title}
+                                    </ThemedText>
+                                  </View>
+                                  <ThemedText
+                                    style={{
+                                      color: colors.text.gray,
+                                      fontSize: 10,
+                                      marginLeft: 35,
+                                    }}
+                                  >
+                                    {description}
+                                  </ThemedText>
                                 </View>
-                              </>
-                            );
-                          })}
-                      </View>
-                    </>
-                  );
-                })}
-              </View>
+                              );
+                            })}
+                        </View>
+                      </>
+                    );
+                  })}
+              </ScrollView>
             </>
           )}
         </ParallaxScrollView>
@@ -554,17 +587,6 @@ export default function HomeScreen() {
         responseData={responseData}
         onButtonPress={markAsRead}
       />
-
-      {/* {signalStartTime && (
-          <CountdownTimer
-            // timeLimit={signalData.timeLimit}
-            startTime={signalStartTime}
-            onTimeUp={() => {
-              // Handle when time is up
-              console.log("Time limit reached!");
-            }}
-          />
-        )} */}
 
       {isLoading && (
         <LoadingModal
