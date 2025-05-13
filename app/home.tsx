@@ -21,6 +21,7 @@ import Selector from "../components/Selector";
 import SignalIcon from "../components/SignalIcon";
 import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
+import ThemeIcon from "../components/ThemeIcon";
 import TimePicker from "../components/TimePicker";
 import SignalModal from "../components/modals/SignalModal";
 
@@ -28,6 +29,7 @@ import SignalModal from "../components/modals/SignalModal";
 import walkThemes from "@/constants/walkThemes";
 import { colors } from "../constants/colors";
 import distanceData from "../constants/distanceData";
+import { WalkLog } from "../constants/interfaces";
 import signalTypes from "../constants/signalTypes";
 
 // icons / images
@@ -56,16 +58,20 @@ export default function HomeScreen() {
   const [numResponds, setNumResponds] = useState(0);
   const [walkLogs, setWalkLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [trailData, setTrailData] = useState({
-    distance: null,
-    themeId: null,
-    location: "",
-  });
   const [responseData, setResponseData] = useState<
     [{ message: string; id: number; signal: { title: string } }]
   >([{ message: "", id: 0, signal: { title: "" } }]);
-  const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
+  const [isPanEnabled, setIsPanEnabled] = useState(true);
+
+  // useStates to handle route recommendation
+  const [trailData, setTrailData] = useState({
+    distance: 0,
+    themeId: null,
+    location: "",
+  });
+  const [isDistanceSelected, setIsDistanceSelected] = useState(false);
+
+  // useStates to handle signal creation
   const [signalData, setSignalData] = useState({
     title: "",
     description: "",
@@ -74,9 +80,11 @@ export default function HomeScreen() {
     timeLimit: 10, // default 10 minutes
     categoryId: null,
   });
-  const [isPanEnabled, setIsPanEnabled] = useState(true);
-  const [signalStartTime, setSignalStartTime] = useState<Date | null>(null);
   const [placeSuggestions, setPlaceSuggestions] = useState([]);
+
+  // useStates to handle modals
+  const [showAddSignal, setShowAddSignal] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const today = moment().format("MMMM Do");
@@ -136,9 +144,6 @@ export default function HomeScreen() {
         userId: userData?.userId,
       });
       // store in redux?
-
-      // Set the start time when the signal is created
-      setSignalStartTime(new Date());
 
       // Close the modal
       setShowAddSignal(false);
@@ -210,13 +215,38 @@ export default function HomeScreen() {
     fetchUserData();
   }, []);
 
+  const WALKLOG_TEST_DATA = [
+    {
+      distance: 1.5,
+      walkedAt: "2025-05-14T15:30:00Z",
+      theme: {
+        id: 1,
+        name: "Nature-focused Walk",
+      },
+      respondedSignals: [
+        {
+          title: "Please help water my plant",
+          description: "I have an ~~~",
+          categoryId: 1,
+          category: "Water Plants / Plant - Related",
+          respondedAt: "2025-05-14T15:35:00Z",
+        },
+      ],
+    },
+  ];
+
   useEffect(() => {
     async function fetchWalkLogData() {
       if (userData && userData?.userId) {
         try {
+          const todaysDate = moment().format();
           const numWalkLogs = await getWalkLogNum(userData?.userId);
           setNumResponds(numWalkLogs);
           const walkLogs = await getWalkLogs(userData?.userId);
+          // TESTING
+          // const walkLogs = WALKLOG_TEST_DATA.find(
+          //   (log: any) => log.walkedAt.slice(0, 10) === todaysDate.slice(0, 10)
+          // );
           setWalkLogs(walkLogs);
         } catch (error) {
           console.error("Error fetching walk log data:", error);
@@ -276,13 +306,12 @@ export default function HomeScreen() {
     userId: 26,
   };
 
-  const TEST_SUGGESTIONS = [
-    { place_id: "1", description: "My house" },
-    { place_id: "2", description: "Hee's house" },
-    { place_id: "3", description: "Jeff's house" },
-    { place_id: "4", description: "Minjae's house" },
-    { place_id: "5", description: "Wonyeong's house" },
-  ];
+  const todaysLog = WALKLOG_TEST_DATA.map((log: any) => {
+    if (log.walkedAt.slice(0, 10) === moment().format().slice(0, 10))
+      return log;
+  });
+
+  console.log(todaysLog);
 
   return (
     <View style={styles.container}>
@@ -292,12 +321,12 @@ export default function HomeScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 10,
+              gap: 5,
             }}
           >
             <Image
               source={LogoImage}
-              style={{ width: 45, height: 56, resizeMode: "contain" }}
+              style={{ width: 35, height: 45, resizeMode: "contain" }}
             />
             <Image
               source={LogoText}
@@ -322,9 +351,10 @@ export default function HomeScreen() {
                     data={data}
                     key={key}
                     selected={trailData?.distance === data.distance}
-                    onPress={(distance: any) =>
-                      handleSetTrailData("distance", distance)
-                    }
+                    onPress={(distance: any) => {
+                      handleSetTrailData("distance", distance);
+                      setIsDistanceSelected(true);
+                    }}
                   />
                 );
               })}
@@ -344,7 +374,7 @@ export default function HomeScreen() {
               {walkThemes.map((theme, key) => {
                 return (
                   <ThemeCard
-                    disabled={trailData?.distance === null}
+                    disabled={!isDistanceSelected}
                     theme={theme}
                     key={key}
                     selected={trailData?.themeId === theme.id}
@@ -359,25 +389,54 @@ export default function HomeScreen() {
           <GlobalButton
             text="Start Walking"
             onPress={() => generateWalkTrail()}
-            disabled={trailData?.distance === null || !trailData?.themeId}
+            disabled={!isDistanceSelected || !trailData?.themeId}
           />
-          {walkLogs?.length !== 0 && (
+          {/* {walkLogs?.length !== 0 && ( */}
+          {todaysLog?.length !== 0 && (
             <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <ThemedText style={{ fontSize: 25, color: colors.green.main }}>
+              <View style={styles.listItems}>
+                <ThemedText style={{ fontSize: 18, color: colors.green.main }}>
                   Today, {today}
                 </ThemedText>
-                <ThemedText type="light" style={{ color: colors.text.gray }}>
+                <ThemedText
+                  type="light"
+                  style={{ color: colors.text.gray, fontSize: 12 }}
+                >
                   {day}
                 </ThemedText>
               </View>
-              <View style={styles.listContainer}></View>
+              <View style={styles.listContainer}>
+                {todaysLog.map((log: WalkLog) => {
+                  const { id, name } = log.theme;
+                  return (
+                    <>
+                      <View>
+                        <View style={styles.listItems}>
+                          <ThemeIcon themeId={id} />
+                          <ThemedText>
+                            {name} - {log.distance}km
+                          </ThemedText>
+                        </View>
+                        {log.respondedSignals?.length > 0 &&
+                          log.respondedSignals.map((item, key) => {
+                            const { title } = item;
+                            const category = signalTypes.find(
+                              (sig) => sig.id === item.categoryId
+                            );
+                            return (
+                              <>
+                                <View>
+                                  {/* <SignalIcon key={key} signal={category} /> */}
+                                  <ThemedText>{title}</ThemedText>
+                                </View>
+                              </>
+                            );
+                          })}
+                      </View>
+                    </>
+                  );
+                })}
+              </View>
             </>
           )}
         </ParallaxScrollView>
@@ -625,5 +684,10 @@ const styles = StyleSheet.create({
     bottom: 15,
     right: 15,
     zIndex: 1000,
+  },
+  listItems: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
   },
 });
