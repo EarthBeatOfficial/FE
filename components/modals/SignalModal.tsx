@@ -59,20 +59,20 @@ const SignalModal = ({
 
   return (
     <>
-      <BottomSheetModal isVisible isCancelButton onClose={onClose} height={585}>
+      <BottomSheetModal isVisible isCancelButton onClose={onClose} height={555}>
         <View style={styles.top}>
           <SignalIcon
             signal={signalType}
             key={data?.id}
-            size={175}
-            imgSize={140}
+            size={150}
+            imgSize={125}
             isShadow
           />
           <ThemedText
             type="semiBold"
             style={{
               color: colors.text.black,
-              fontSize: 20,
+              fontSize: 18,
               paddingVertical: 10,
             }}
           >
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   top: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 15,
+    gap: 10,
   },
   flexBox: {
     flexDirection: "row",

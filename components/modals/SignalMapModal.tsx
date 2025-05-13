@@ -46,55 +46,51 @@ const SignalMapModal = ({ onRespond, onCancel, data }: SignalMapModalProps) => {
   }, []);
   return (
     <>
-      <Modal transparent>
-        <View style={styles.overlay}>
-          <View style={styles.container}>
-            <BlurView
-              intensity={11}
-              tint="light"
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  borderRadius: 25,
-                  overflow: "hidden",
-                  borderWidth: 2,
-                  borderColor: "#f0f0f0",
-                },
-              ]}
-            />
-            <View style={styles.flexBox}>
-              <View>
-                <ThemedText
-                  type="semiBold"
-                  style={{ fontSize: 20, marginBottom: 5, width: 210 }}
-                >
-                  {data?.title}
-                </ThemedText>
-                <CountdownTimer
-                  createdAt={data?.createdAt.slice(0, -5)}
-                  expiresAt={data?.expiresAt.slice(0, -5)}
-                />
-              </View>
-              <SignalIcon
-                signal={signalType}
-                key={data?.id}
-                size={60}
-                imgSize={45}
-                isShadow
-              />
-            </View>
-            <GlobalButton
-              text="Mark as Responded"
-              onPress={() => onRespond(data?.id)}
-            />
-            <GlobalButton
-              text="Cancel Signal"
-              onPress={() => onCancel(data?.id)}
-              color={colors.red.main}
+      <View style={styles.container}>
+        <BlurView
+          intensity={50}
+          tint="light"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: 25,
+              overflow: "hidden",
+              borderWidth: 2,
+              borderColor: "#f0f0f0",
+            },
+          ]}
+        />
+        <View style={styles.flexBox}>
+          <View>
+            <ThemedText
+              type="semiBold"
+              style={{ fontSize: 18, marginBottom: 5, width: 210 }}
+            >
+              {data?.title}
+            </ThemedText>
+            <CountdownTimer
+              createdAt={data?.createdAt.slice(0, -5)}
+              expiresAt={data?.expiresAt.slice(0, -5)}
             />
           </View>
+          <SignalIcon
+            signal={signalType}
+            key={data?.id}
+            size={60}
+            imgSize={45}
+            isShadow
+          />
         </View>
-      </Modal>
+        <GlobalButton
+          text="Mark as Responded"
+          onPress={() => onRespond(data?.id)}
+        />
+        <GlobalButton
+          text="Cancel Signal"
+          onPress={() => onCancel(data?.id)}
+          color={colors.red.main}
+        />
+      </View>
     </>
   );
 };
@@ -114,12 +110,10 @@ const styles = StyleSheet.create({
     shadowRadius: 45,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     gap: 10,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    overflow: "hidden",
+    position: "absolute",
+    bottom: 10,
+    left: "50%",
+    transform: "translateX(-50%)",
   },
   flexBox: {
     flexDirection: "row",
