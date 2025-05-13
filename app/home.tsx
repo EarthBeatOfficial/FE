@@ -22,6 +22,7 @@ import SignalIcon from "../components/SignalIcon";
 import ThemeCard from "../components/themeCard";
 import { ThemedText } from "../components/ThemedText";
 import TimePicker from "../components/TimePicker";
+import SignalModal from "../components/modals/SignalModal";
 
 // constants
 import walkThemes from "@/constants/walkThemes";
@@ -520,21 +521,20 @@ export default function HomeScreen() {
 
       {/* testing - Accept*/}
       {/* <SignalModal
-          isAccept
-          onClose={() => setShowNotification(false)}
-          data={TEST_DATA}
-          buttonText={"Accept"}
-          onPress={(id) => console.log(id)}
-        /> */}
+        isAccept
+        onClose={() => setShowNotification(false)}
+        data={TEST_DATA}
+        buttonText={"Accept"}
+        onPress={(id) => console.log(id)}
+      /> */}
       {/* testing - Mark as responded*/}
       {/* <SignalModal
-          isAccept={false}
-          onClose={() => setShowNotification(false)}
-          data={TEST_DATA}
-          buttonText={"Mark as Responded"}
-          onPress={(id)
-           => console.log(id)}
-        /> */}
+        isAccept={false}
+        onClose={() => setShowNotification(false)}
+        data={TEST_DATA}
+        buttonText={"Mark as Responded"}
+        onPress={(id) => console.log(id)}
+      /> */}
       {/* testing - Take Route */}
       {/* <RouteModal
           themeId={testingRoute?.themeId}
@@ -543,10 +543,10 @@ export default function HomeScreen() {
         /> */}
       {/* testing - Show Signal on Map */}
       {/* <SignalMapModal
-          data={TEST_DATA}
-          onCancel={(id) => console.log(id)}
-          onRespond={(id) => console.log(id)}
-        /> */}
+        data={TEST_DATA}
+        onCancel={(id) => console.log(id)}
+        onRespond={(id) => console.log(id)}
+      /> */}
     </View>
   );
 }

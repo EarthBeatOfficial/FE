@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   timer: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.darkGray.main,
   },
   warning: {
