@@ -18,10 +18,11 @@ import ArrowIcon from "@/assets/icons/black-arrow.png";
 import { colors } from "../constants/colors";
 
 // modals
+import SignalMapModal from "@/components/modals/SignalMapModal";
 import SignalModal from "@/components/modals/SignalModal";
 
 // API
-import { acceptSignal, getAllSignals, getMySignals } from "../api/signalApi";
+import { acceptSignal, cancelSignal, getAllSignals, getMySignals } from "../api/signalApi";
 import { endWalkSession, getActiveWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -67,6 +68,7 @@ export default function MapScreen() {
   const [selectedInProgressSignal, setSelectedInProgressSignal] = useState<Signal | null>(null);
   const [activeSession, setActiveSession] = useState(null); // 활성화된 산책 세션
   const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
+  const [signalModalType, setSignalModalType] = useState<"accept" | "responded">("accept");
 
   const containerStyle = {
     width: "100%",
@@ -187,7 +189,7 @@ export default function MapScreen() {
       } catch (error) {
         console.error(
           "내가 응답한 IN_PROGRESS 시그널 데이터를 가져오는데 실패했습니다:",
-          error
+          (error as any)?.response || error
         );
       }
     };
@@ -239,6 +241,7 @@ export default function MapScreen() {
   // PENDING 마커 클릭 시
   const handlePendingMarkerClick = (signal: Signal) => {
     setSelectedSignal(signal);
+    setSignalModalType("accept");
     setSignalModalVisible(true);
   };
 
@@ -345,6 +348,24 @@ export default function MapScreen() {
       // 필요하다면 signalList 갱신 등 추가 작업
     } catch (error) {
       console.error("Signal 수락 실패:", error);
+    }
+  };
+
+  const handleMarkasResponded = async () => {
+    if (!selectedInProgressSignal) return;
+    setSelectedSignal(selectedInProgressSignal);
+    setSignalModalType("responded");
+    setSignalModalVisible(true);
+    setSelectedInProgressSignal(null);
+  };
+
+  const handleCancelSignal = async () => {
+    if (!selectedInProgressSignal) return;
+    try {
+      await cancelSignal(selectedInProgressSignal.id, userData);
+      setSelectedInProgressSignal(null); // 모달 닫기 등 후처리
+    } catch (error) {
+      console.error("Signal 취소 실패:", error);
     }
   };
 
@@ -468,9 +489,32 @@ export default function MapScreen() {
         visible={true}
         onPress={handleAcceptSignal}
         onClose={() => setSignalModalVisible(false)}
-        data={selectedSignal}
-        buttonText="Accept"
-        isAccept={true}
+        data={{
+          id: selectedSignal.id,
+          title: selectedSignal.title,
+          description: selectedSignal.description,
+          createdAt: selectedSignal.createdAt,
+          categoryId: selectedSignal.categoryId,
+          expiresAt: selectedSignal.expiresAt,
+        }}
+        buttonText={signalModalType === "accept" ? "Accept" : "Mark as Responded"}
+        isAccept={signalModalType === "accept"}
+      />
+    )}
+
+    {/* SignalMapModal */}
+    {selectedInProgressSignal && (
+      <SignalMapModal
+        onRespond={handleMarkasResponded}
+        onCancel={handleCancelSignal}
+        data={{
+          id: selectedInProgressSignal.id,
+          title: selectedInProgressSignal.title,
+          description: selectedInProgressSignal.description,
+          createdAt: selectedInProgressSignal.createdAt,
+          categoryId: selectedInProgressSignal.categoryId,
+          expiresAt: selectedInProgressSignal.expiresAt,
+        }}
       />
     )}
   </View>
