@@ -2,7 +2,7 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   baseURL: "https://earthbeat-194219186281.asia-northeast1.run.app",
-  timeout: 15000,
+  timeout: 50000,
   headers: {
     "Content-Type": "application/json",
   },
