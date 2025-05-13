@@ -37,7 +37,7 @@ const ThemeCard = ({ theme, onPress, disabled, selected }: ThemeCardProps) => {
         </Text>
         <Text
           style={{
-            fontSize: 18,
+            fontSize: 14,
             fontFamily: "Poppins_600SemiBold",
             color: disabled ? colors.darkGray.main : theme.color.main,
           }}
@@ -54,7 +54,7 @@ export default ThemeCard;
 const Container = styled.View<ContainerProps>`
   display: flex;
   flex-direction: column;
-  width: 128px;
+  width: 108px;
   height: 110px;
   padding: 15px;
   background-color: ${(props: ContainerProps) =>

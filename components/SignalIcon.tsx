@@ -14,7 +14,7 @@ interface SignalIconProps {
 }
 
 const SignalIcon: React.FC<SignalIconProps> = ({
-  size = 56, // default size
+  size = 50, // default size
   disabled,
   onPress,
   selected = true, // true by default
@@ -42,8 +42,8 @@ const SignalIcon: React.FC<SignalIconProps> = ({
         style={[
           styles.image,
           {
-            width: imgSize ? imgSize : 50,
-            height: imgSize ? imgSize : 50,
+            width: imgSize ? imgSize : 42,
+            height: imgSize ? imgSize : 42,
           },
         ]}
         resizeMode="contain"
