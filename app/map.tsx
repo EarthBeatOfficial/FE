@@ -35,7 +35,7 @@ import {
   getAllSignals,
   getMySignals,
 } from "../api/signalApi";
-import { endWalkSession } from "../api/walkSessionApi";
+import { endWalkSession, startWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -363,39 +363,21 @@ export default function MapScreen() {
 
   // RouteModal의 Take Route 버튼 핸들러 - routeId BE에서 받아온 이후 사용
   const handleTakeRoute = async () => {
-    // if (!userData?.userId || !recommendedRoute?.routeId) return;
-    // try {
-    //   const session = await startWalkSession({
-    //     userId: userData.userId,
-    //     routeId: recommendedRoute.routeId,
-    //   });
-    //   setActiveSession(session);
-    //   setSessionId(session.id);
-    //   setRouteModalVisible(false);
-    // // Store session in redux (NO GET request needed for active walk sessions)
-    // } catch (error) {
-    //   console.error("산책 시작에 실패했습니다:", error);
-    // }
-    const TEST_DATA: Session = {
-      id: 1,
-      userId: 1,
-      routeId: 2,
-      startedAt: "2024-03-20T10:00:00Z",
-      finishedAt: null,
-      status: "IN_PROGRESS",
-      route: {
-        id: 2,
-        userId: 1,
-        distance: 1.5,
-        themeId: 1,
-        createdAt: "2024-03-20T10:00:00Z",
-        completedAt: null,
-      },
-    };
-    setActiveSession(TEST_DATA);
-    setRouteModalVisible(false);
-    setIsWalking(true);
-    setShowConfirmModal(true);
+    if (!userData?.userId || !recommendedRoute?.id) return;
+    try {
+      const session = await startWalkSession({
+        userId: userData.userId,
+        routeId: recommendedRoute.id,
+      });
+      setActiveSession(session);
+      setSessionId(session.id);
+      setRouteModalVisible(false);
+      setIsWalking(true);
+      setShowConfirmModal(true);
+      // Store session in redux (NO GET request needed for active walk sessions)
+    } catch (error) {
+      console.error("산책 시작에 실패했습니다:", error);
+    }
   };
 
   // 경로 좌표 배열 생성 함수
