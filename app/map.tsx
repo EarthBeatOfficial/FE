@@ -448,9 +448,9 @@ export default function MapScreen() {
   };
 
   const handleFinishWalk = async () => {
-    if (!sessionId || !userData?.userId) return;
+    if (!activeSession?.id || !userData?.userId) return;
     try {
-      await endWalkSession(sessionId, { userId: userData.userId });
+      await endWalkSession(activeSession.id, { userId: userData.userId });
       dispatch(clearActiveSession());
       setIsWalking(false);
       // setActiveSession(null);
