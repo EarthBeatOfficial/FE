@@ -168,27 +168,29 @@ export default function HomeScreen() {
         },
       });
     } else {
-      setIsLoading(true);
-      try {
-        const resp = await recommendRoute({
-          userId: userData?.userId,
-          location: trailData?.location,
-          themeId: trailData?.themeId,
-          distance: trailData?.distance,
-        });
-        // Store trailData in redux to use it in a modal in map.tsx
-        dispatch(setRecommendedRoute(resp));
-      } catch (error: any) {
-        console.log("Error generating a route recommendation", error);
-      } finally {
-        setIsLoading(false);
-        router.push({
-          pathname: "/map",
-          params: {
-            distance: trailData?.distance,
+      if (trailData.location !== "") {
+        setIsLoading(true);
+        try {
+          const resp = await recommendRoute({
+            userId: userData?.userId,
+            location: trailData?.location,
             themeId: trailData?.themeId,
-          },
-        });
+            distance: trailData?.distance,
+          });
+          // Store trailData in redux to use it in a modal in map.tsx
+          dispatch(setRecommendedRoute(resp));
+        } catch (error: any) {
+          console.log("Error generating a route recommendation", error);
+        } finally {
+          setIsLoading(false);
+          router.push({
+            pathname: "/map",
+            params: {
+              distance: trailData?.distance,
+              themeId: trailData?.themeId,
+            },
+          });
+        }
       }
     }
 
@@ -219,16 +221,21 @@ export default function HomeScreen() {
         console.log("Permission to access location was denied");
         return;
       }
-      let location = await Location.getCurrentPositionAsync({});
-      if (location) {
-        const { latitude, longitude } = location.coords;
-        setTrailData({
-          ...trailData,
-          location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
         });
-        setIsLoading(false);
-      } else {
-        setIsLoading(true);
+        if (location) {
+          const { latitude, longitude } = location.coords;
+          setTrailData({
+            ...trailData,
+            location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+          });
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error getting current location:", error);
+        // setIsLoading(true);
       }
     }
 
@@ -441,7 +448,11 @@ export default function HomeScreen() {
           <GlobalButton
             text={getButtonText()}
             onPress={() => generateWalkTrail()}
-            disabled={!isDistanceSelected || !trailData?.themeId}
+            disabled={
+              !isDistanceSelected ||
+              !trailData?.themeId ||
+              trailData.location === ""
+            }
           />
           {walkLogs?.length !== 0 && (
             <>

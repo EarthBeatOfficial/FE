@@ -5,6 +5,7 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -27,7 +28,13 @@ import RouteModal from "../components/modals/RouteModal";
 
 // API
 import { sendResponse } from "@/api/responsesApi";
-import { acceptSignal, cancelSignal, deleteSignal, getAllSignals, getMySignals } from "../api/signalApi";
+import {
+  acceptSignal,
+  cancelSignal,
+  deleteSignal,
+  getAllSignals,
+  getMySignals,
+} from "../api/signalApi";
 import { endWalkSession } from "../api/walkSessionApi";
 
 // import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -143,28 +150,26 @@ export default function MapScreen() {
 
   // 현재 위치 추적
   useEffect(() => {
-    if (!isLoaded || !navigator.geolocation) return;
-
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setCurrentPosition({ lat: latitude, lng: longitude });
-        setMapCenter({ lat: latitude, lng: longitude });
-      },
-      (err) => {
-        console.warn("위치 정보를 가져올 수 없습니다.", err);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000, // 5초
+    async function getCurrentLocation() {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted" || !isLoaded) {
+        console.log("Permission to access location was denied");
+        return;
       }
-    );
-
-    // cleanup 함수 반환
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-    };
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        if (location) {
+          const { latitude, longitude } = location.coords;
+          setCurrentPosition({ lat: latitude, lng: longitude });
+          setMapCenter({ lat: latitude, lng: longitude });
+        }
+      } catch (error) {
+        console.error("Error getting current location:", error);
+      }
+    }
+    getCurrentLocation();
   }, [isLoaded]);
 
   // PENDING 시그널 데이터 가져오기
