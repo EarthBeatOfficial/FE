@@ -9,16 +9,12 @@ import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { setWalkStatus } from "../redux/slices/walkSlice";
-import { RootState } from "../redux/store";
 
 // images / icons
 import ArrowIcon from "@/assets/icons/black-arrow.png";
 
 // constants
 import { colors } from "../constants/colors";
-import { Session } from "../constants/interfaces";
 
 // modals
 import SignalMapModal from "@/components/modals/SignalMapModal";
@@ -37,7 +33,14 @@ import {
 } from "../api/signalApi";
 import { endWalkSession, startWalkSession } from "../api/walkSessionApi";
 
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+// redux
+import { useDispatch, useSelector } from "react-redux";
+import {
+  clearActiveSession,
+  setActiveSession,
+} from "../redux/slices/sessionSlice";
+import { setWalkStatus } from "../redux/slices/walkSlice";
+import { RootState } from "../redux/store";
 
 /**
  * <TODO>
@@ -97,7 +100,7 @@ export default function MapScreen() {
   const [signalMapModalVisible, setSignalMapModalVisible] = useState(false);
   const [selectedInProgressSignal, setSelectedInProgressSignal] =
     useState<Signal | null>(null);
-  const [activeSession, setActiveSession] = useState<Session | null>(null); // 활성화된 산책 세션
+  // const [activeSession, setActiveSession] = useState<Session | null>(null); // 활성화된 산책 세션
   const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
   const [routeDetails, setRouteDetails] = useState<{
     distance: string | null;
@@ -139,6 +142,10 @@ export default function MapScreen() {
   // call the recommended route through redux
   const recommendedRoute = useSelector(
     (state: RootState) => state.route?.recommendedRoute
+  );
+
+  const activeSession = useSelector(
+    (state: RootState) => state.session.activeSession
   );
 
   // call the current walk status through redux
@@ -220,6 +227,10 @@ export default function MapScreen() {
     };
     if (walkStatus === "IN_PROGRESS") {
       setRouteModalVisible(false);
+    }
+    console.log(activeSession);
+    if (activeSession) {
+      setIsWalking(true);
     }
 
     fetchUserDataAndSession();
@@ -369,7 +380,8 @@ export default function MapScreen() {
         userId: userData.userId,
         routeId: recommendedRoute.id,
       });
-      setActiveSession(session);
+      dispatch(setActiveSession(session));
+      // setActiveSession(session);
       setSessionId(session.id);
       setRouteModalVisible(false);
       setIsWalking(true);
@@ -439,8 +451,9 @@ export default function MapScreen() {
     if (!sessionId || !userData?.userId) return;
     try {
       await endWalkSession(sessionId, { userId: userData.userId });
+      dispatch(clearActiveSession());
       setIsWalking(false);
-      setActiveSession(null);
+      // setActiveSession(null);
       setSessionId(null);
       // 홈으로 이동
       router.replace("/home");
