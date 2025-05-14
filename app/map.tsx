@@ -30,10 +30,10 @@ import { sendResponse } from "@/api/responsesApi";
 import { acceptSignal, cancelSignal, deleteSignal, getAllSignals, getMySignals } from "../api/signalApi";
 import { endWalkSession } from "../api/walkSessionApi";
 
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-
 /**
  * <TODO>
+ * 시간이 만료된 signal marker 없애야 됨
+ * signal이 responses되었다 알림 보내는 부분에서 에러 발생
  * 추천 루트와 modal이 함께 뜨지 않는 문제 (새로고침 시 루트 사라지고 modal이 뜸)
  * accept한 signal 마커가 바로 지도에 나타나지 않는 문제
  * 
