@@ -4,6 +4,8 @@ import React, { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 // comps
 import GlobalButton from "@/components/GlobalButton";
@@ -37,7 +39,7 @@ import LogoImage from "@/assets/images/logo-earth.png";
 import LogoText from "@/assets/images/logo-text.png";
 
 // Redux
-import { setRecommendedRoute } from "@/redux/routeSlice";
+import { setRecommendedRoute } from "@/redux/slices/routeSlice";
 import { useDispatch } from "react-redux";
 
 // API
@@ -89,6 +91,9 @@ export default function HomeScreen() {
   const today = moment().format("MMMM Do");
   const day = moment().format("dddd");
 
+  const walkStatus = useSelector((state: RootState) => state.walk.status);
+
+  // Fetch places on Autocomplete through Google Maps API
   const fetchPlaceSuggestions = async (input: string) => {
     try {
       const response = await getAutoCompleteSet(input);
@@ -154,20 +159,7 @@ export default function HomeScreen() {
   };
 
   const generateWalkTrail = async () => {
-    setIsLoading(true);
-    try {
-      const resp = await recommendRoute({
-        userId: userData?.userId,
-        location: trailData?.location,
-        themeId: trailData?.themeId,
-        distance: trailData?.distance,
-      });
-      // Store trailData in redux to use it in a modal in map.tsx
-      dispatch(setRecommendedRoute(resp));
-    } catch (error: any) {
-      console.log("Error generating a route recommendation", error);
-    } finally {
-      setIsLoading(false);
+    if (walkStatus === "IN_PROGRESS") {
       router.push({
         pathname: "/map",
         params: {
@@ -175,11 +167,36 @@ export default function HomeScreen() {
           themeId: trailData?.themeId,
         },
       });
+    } else {
+      if (trailData.location !== "") {
+        setIsLoading(true);
+        try {
+          const resp = await recommendRoute({
+            userId: userData?.userId,
+            location: trailData?.location,
+            themeId: trailData?.themeId,
+            distance: trailData?.distance,
+          });
+          // Store trailData in redux to use it in a modal in map.tsx
+          dispatch(setRecommendedRoute(resp));
+        } catch (error: any) {
+          console.log("Error generating a route recommendation", error);
+        } finally {
+          setIsLoading(false);
+          router.push({
+            pathname: "/map",
+            params: {
+              distance: trailData?.distance,
+              themeId: trailData?.themeId,
+            },
+          });
+        }
+      }
     }
 
     if (trailData?.location) {
     } else {
-      // ADD could not generate UI
+      console.log("Location was not found");
     }
   };
 
@@ -204,16 +221,21 @@ export default function HomeScreen() {
         console.log("Permission to access location was denied");
         return;
       }
-      let location = await Location.getCurrentPositionAsync({});
-      if (location) {
-        const { latitude, longitude } = location.coords;
-        setTrailData({
-          ...trailData,
-          location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
         });
-        setIsLoading(false);
-      } else {
-        setIsLoading(true);
+        if (location) {
+          const { latitude, longitude } = location.coords;
+          setTrailData({
+            ...trailData,
+            location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+          });
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error getting current location:", error);
+        // setIsLoading(true);
       }
     }
 
@@ -267,7 +289,7 @@ export default function HomeScreen() {
           setNumResponds(numWalkLogs);
           const walkLogs = await getWalkLogs(userData?.userId);
           if (walkLogs?.length > 0) {
-            const todaysLogs = walkLogs.find(
+            const todaysLogs = walkLogs.filter(
               (log: any) =>
                 log.walkedAt.slice(0, 10) === todaysDate.slice(0, 10)
             );
@@ -331,6 +353,17 @@ export default function HomeScreen() {
     userId: 26,
   };
 
+  const getButtonText = () => {
+    switch (walkStatus) {
+      case "IN_PROGRESS":
+        return "Resume Walking";
+      case "COMPLETED":
+        return "Start Walking";
+      default:
+        return "Start Walking";
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.container}>
@@ -368,7 +401,10 @@ export default function HomeScreen() {
                   <Selector
                     data={data}
                     key={key}
-                    selected={trailData?.distance === data.distance}
+                    selected={
+                      walkStatus !== "IN_PROGRESS" &&
+                      trailData?.distance === data.distance
+                    }
                     onPress={(distance: any) => {
                       handleSetTrailData("distance", distance);
                       setIsDistanceSelected(true);
@@ -392,10 +428,15 @@ export default function HomeScreen() {
               {walkThemes.map((theme, key) => {
                 return (
                   <ThemeCard
-                    disabled={!isDistanceSelected}
+                    disabled={
+                      !isDistanceSelected || walkStatus === "IN_PROGRESS"
+                    }
                     theme={theme}
                     key={key}
-                    selected={trailData?.themeId === theme.id}
+                    selected={
+                      walkStatus !== "IN_PROGRESS" &&
+                      trailData?.themeId === theme.id
+                    }
                     onPress={() => {
                       handleSetTrailData("themeId", theme.id);
                     }}
@@ -405,9 +446,13 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
           <GlobalButton
-            text="Start Walking"
+            text={getButtonText()}
             onPress={() => generateWalkTrail()}
-            disabled={!isDistanceSelected || !trailData?.themeId}
+            disabled={
+              !isDistanceSelected ||
+              !trailData?.themeId ||
+              trailData.location === ""
+            }
           />
           {walkLogs?.length !== 0 && (
             <>
@@ -423,58 +468,57 @@ export default function HomeScreen() {
                 </ThemedText>
               </View>
               <ScrollView style={styles.listContainer}>
-                {walkLogs?.length !== 0 &&
-                  walkLogs?.map((log: WalkLog) => {
-                    const { id, name } = log.theme;
-                    return (
-                      <>
-                        <View style={{ paddingBottom: 15 }}>
-                          <View style={styles.listItems}>
-                            <ThemeIcon themeId={id} />
-                            <ThemedText>
-                              {name} - {log.distance}km
-                            </ThemedText>
-                          </View>
-                          {log.respondedSignals?.length > 0 &&
-                            log.respondedSignals.map((item, key) => {
-                              const { title, description } = item;
-                              const category = signalTypes.find(
-                                (sig) => sig.id === item.categoryId
-                              );
-                              return (
-                                <View style={{ marginLeft: 50 }}>
-                                  <View style={styles.listItems}>
-                                    <SignalIcon
-                                      key={key}
-                                      signal={category}
-                                      size={25}
-                                      imgSize={18}
-                                    />
-                                    <ThemedText
-                                      style={{
-                                        color: colors.darkGray.main,
-                                        fontSize: 12,
-                                      }}
-                                    >
-                                      {title}
-                                    </ThemedText>
-                                  </View>
+                {walkLogs?.map((log: WalkLog) => {
+                  const { id, name } = log.theme;
+                  return (
+                    <>
+                      <View style={{ paddingBottom: 15 }}>
+                        <View style={styles.listItems}>
+                          <ThemeIcon themeId={id} />
+                          <ThemedText>
+                            {name} - {log.distance}km
+                          </ThemedText>
+                        </View>
+                        {log.respondedSignals?.length > 0 &&
+                          log.respondedSignals.map((item, key) => {
+                            const { title, description } = item;
+                            const category = signalTypes.find(
+                              (sig) => sig.id === item.categoryId
+                            );
+                            return (
+                              <View style={{ marginLeft: 50 }}>
+                                <View style={styles.listItems}>
+                                  <SignalIcon
+                                    key={key}
+                                    signal={category}
+                                    size={25}
+                                    imgSize={18}
+                                  />
                                   <ThemedText
                                     style={{
-                                      color: colors.text.gray,
-                                      fontSize: 10,
-                                      marginLeft: 35,
+                                      color: colors.darkGray.main,
+                                      fontSize: 12,
                                     }}
                                   >
-                                    {description}
+                                    {title}
                                   </ThemedText>
                                 </View>
-                              );
-                            })}
-                        </View>
-                      </>
-                    );
-                  })}
+                                <ThemedText
+                                  style={{
+                                    color: colors.text.gray,
+                                    fontSize: 10,
+                                    marginLeft: 35,
+                                  }}
+                                >
+                                  {description}
+                                </ThemedText>
+                              </View>
+                            );
+                          })}
+                      </View>
+                    </>
+                  );
+                })}
               </ScrollView>
             </>
           )}
@@ -611,21 +655,20 @@ export default function HomeScreen() {
 
       {/* testing - Accept*/}
       {/* <SignalModal
-          isAccept
-          onClose={() => setShowNotification(false)}
-          data={TEST_DATA}
-          buttonText={"Accept"}
-          onPress={(id) => console.log(id)}
-        /> */}
+        isAccept
+        onClose={() => setShowNotification(false)}
+        data={TEST_DATA}
+        buttonText={"Accept"}
+        onPress={(id) => console.log(id)}
+      /> */}
       {/* testing - Mark as responded*/}
       {/* <SignalModal
-          isAccept={false}
-          onClose={() => setShowNotification(false)}
-          data={TEST_DATA}
-          buttonText={"Mark as Responded"}
-          onPress={(id)
-           => console.log(id)}
-        /> */}
+        isAccept={false}
+        onClose={() => setShowNotification(false)}
+        data={TEST_DATA}
+        buttonText={"Mark as Responded"}
+        onPress={(id) => console.log(id)}
+      /> */}
       {/* testing - Take Route */}
       {/* <RouteModal
           themeId={testingRoute?.themeId}
@@ -634,10 +677,10 @@ export default function HomeScreen() {
         /> */}
       {/* testing - Show Signal on Map */}
       {/* <SignalMapModal
-          data={TEST_DATA}
-          onCancel={(id) => console.log(id)}
-          onRespond={(id) => console.log(id)}
-        /> */}
+        data={TEST_DATA}
+        onCancel={(id) => console.log(id)}
+        onRespond={(id) => console.log(id)}
+      /> */}
     </View>
   );
 }

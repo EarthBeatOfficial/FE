@@ -1,7 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface RouteState {
-  recommendedRoute: any | null;
+  recommendedRoute: {
+    id: number;
+    origin: { lat: number; lng: number };
+    destination: { lat: number; lng: number };
+    waypoints: Array<{ location: { lat: number; lng: number } }>;
+  } | null;
 }
 
 const initialState: RouteState = {

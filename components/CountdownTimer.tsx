@@ -11,12 +11,14 @@ interface CountdownTimerProps {
   createdAt: Date | string;
   expiresAt: Date | string;
   onTimeUp?: () => void;
+  onExpiredChange?: (isExpired: boolean) => void;
 }
 
 const CountdownTimer: React.FC<CountdownTimerProps> = ({
   createdAt,
   expiresAt,
   onTimeUp,
+  onExpiredChange,
 }) => {
   // Parse dates if they are strings
   const created =
@@ -33,6 +35,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   };
 
   const [timeLeft, setTimeLeft] = useState<number>(getInitialTimeLeft());
+  const [isExpired, setIsExpired] = useState<boolean>(timeLeft <= 0);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -43,18 +46,25 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
 
       if (remainingSeconds <= 0) {
         onTimeUp?.();
+        setIsExpired(true);
+        onExpiredChange?.(true);
         return 0;
       }
       return remainingSeconds;
     };
 
     // Update immediately
-    setTimeLeft(calculateTimeLeft());
+    const initialTime = calculateTimeLeft();
+    setTimeLeft(initialTime);
+    setIsExpired(initialTime <= 0);
+    onExpiredChange?.(initialTime <= 0);
 
     // Update every second
     const timer = setInterval(() => {
       const remaining = calculateTimeLeft();
       setTimeLeft(remaining);
+      setIsExpired(remaining <= 0);
+      onExpiredChange?.(remaining <= 0);
 
       if (remaining <= 0) {
         clearInterval(timer);
@@ -62,9 +72,11 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [createdAt, expiresAt, onTimeUp]);
+  }, [createdAt, expiresAt, onTimeUp, onExpiredChange]);
 
   const formatTime = (seconds: number) => {
+    if (isExpired) return "Expired";
+
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -78,16 +90,14 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   return (
     <View style={styles.container}>
       <Image
-        source={timeLeft <= 300 ? ExpiredTimeIcon : TimeIcon}
+        source={isExpired || timeLeft <= 300 ? ExpiredTimeIcon : TimeIcon}
         style={{ width: 20, height: 20 }}
       />
       <ThemedText
-        style={[
-          styles.timer,
-          timeLeft <= 300 && styles.warning, // Red color when less than 5 minutes left
-        ]}
+        style={[styles.timer, (isExpired || timeLeft <= 300) && styles.warning]}
       >
-        {formatTime(timeLeft)} remaining
+        {formatTime(timeLeft)}
+        {!isExpired && " remaining"}
       </ThemedText>
     </View>
   );
@@ -100,7 +110,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   timer: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.darkGray.main,
   },
   warning: {

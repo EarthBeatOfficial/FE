@@ -1,9 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
-import routeReducer from "./routeSlice";
+import routeReducer from "./slices/routeSlice";
+import walkReducer from "./slices/walkSlice";
+import sessionReducer from "./slices/sessionSlice";
 
 export const store = configureStore({
   reducer: {
     route: routeReducer,
+    walk: walkReducer,
+    session: sessionReducer,
   },
 });
 

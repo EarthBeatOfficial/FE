@@ -1,9 +1,9 @@
 import {
-  Poppins_300Light,
-  Poppins_400Regular,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-  useFonts,
+    Poppins_300Light,
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    useFonts,
 } from "@expo-google-fonts/poppins";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -52,3 +52,23 @@ export default function RootLayout() {
     </Provider>
   );
 }
+
+// const WALKLOG_TEST_DATA = 	[
+//   {
+//     "distance": 1.5,
+//     "walkedAt": "2024-03-20T15:30:00Z",
+//     "theme": {
+//       "id": 1,
+//       "name": "Nature-focused Walk"
+//     },
+//     "respondedSignals": [
+//       {
+//         "title": "Please help water my plant",
+//         "description": "I have an ~~~",
+//         "categoryId": 1,
+//         "category": "Water Plants / Plant - Related",
+//         "respondedAt": "2024-03-20T15:25:00Z"
+//       }
+//     ]
+//   }
+// ]

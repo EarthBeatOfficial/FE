@@ -1,22 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import CountdownTimer from "../CountdownTimer";
 import GlobalButton from "../GlobalButton";
 import GlobalInput from "../GlobalInput";
 import SignalIcon from "../SignalIcon";
 import { ThemedText } from "../ThemedText";
 import BottomSheetModal from "./BottomSheetModal";
 import ModalSection from "./ModalSection";
-import CountdownTimer from "../CountdownTimer";
 
 // icon / constants
-import TimeIcon from "@/assets/icons/time.png";
 import { colors } from "../../constants/colors";
 import signalTypes, { SignalType } from "../../constants/signalTypes";
 
 interface SignalModalProps {
-  countdown?: any;
-  onPress: (id: number) => void;
+  visible: boolean;
+  onPress: (signalId: number) => void;
   onClose: () => void;
   data: {
     id: number;
@@ -28,17 +27,24 @@ interface SignalModalProps {
   };
   buttonText: string;
   isAccept: boolean;
+  message?: string;
+  setMessage?: (msg: string) => void;
+  handleExpired?: (signalId: number) => void;
 }
 
-const SignalModal = ({
+const SignalModal: React.FC<SignalModalProps> = ({
+  visible,
   onPress,
   onClose,
   data,
   buttonText,
   isAccept,
+  message,
+  setMessage,
+  handleExpired,
 }: SignalModalProps) => {
   const [signalType, setSignalType] = useState<SignalType>(signalTypes[0]);
-  const [message, setMessage] = useState("");
+  const [isExpired, setIsExpired] = useState(false);
   useEffect(() => {
     const fetchCategory = () => {
       if (data && data?.categoryId) {
@@ -51,57 +57,63 @@ const SignalModal = ({
       }
     };
     fetchCategory();
-  }, []);
-
-  const handleMessage = (value: string) => {
-    setMessage(value);
-  };
+  }, [data]);
 
   return (
-    <>
-      <BottomSheetModal isVisible isCancelButton onClose={onClose} height={585}>
-        <View style={styles.top}>
-          <SignalIcon
-            signal={signalType}
-            key={data?.id}
-            size={175}
-            imgSize={140}
-            isShadow
-          />
-          <ThemedText
-            type="semiBold"
-            style={{
-              color: colors.text.black,
-              fontSize: 20,
-              paddingVertical: 10,
-            }}
-          >
-            {data?.title}
-          </ThemedText>
-          {isAccept && (
-            <CountdownTimer
-              createdAt={data?.createdAt.slice(0, -5)}
-              expiresAt={data?.expiresAt.slice(0, -5)}
-            />
-          )}
-        </View>
-        <ModalSection>
-          <GlobalInput
-            placeholder="Leave a message"
-            value={isAccept ? data?.description : message}
-            readOnly={isAccept}
-            multiline
-            numberOfLines={3}
-            onChangeText={handleMessage}
-          />
-        </ModalSection>
-        <GlobalButton
-          text={buttonText}
-          onPress={() => onPress(data?.id)}
-          disabled={message === ""}
+    <BottomSheetModal
+      isVisible={visible}
+      onClose={onClose}
+      height={500}
+      isCancelButton
+    >
+      <View style={styles.header}>
+        <SignalIcon
+          signal={signalType}
+          key={data?.id}
+          size={120}
+          imgSize={100}
+          isShadow
         />
-      </BottomSheetModal>
-    </>
+        <ThemedText
+          type="semiBold"
+          style={{
+            color: colors.text.black,
+            fontSize: 20,
+            paddingVertical: 10,
+          }}
+        >
+          {data?.title}
+        </ThemedText>
+        {isAccept && (
+          <CountdownTimer
+            createdAt={data.createdAt}
+            expiresAt={data.expiresAt}
+            onExpiredChange={(expired) => {
+              if (expired) {
+                setIsExpired(true);
+                if (handleExpired) handleExpired(data.id);
+              }
+            }}
+          />
+        )}
+      </View>
+      <ModalSection>
+        <GlobalInput
+          placeholder="Leave a message"
+          value={isAccept ? data?.description : message}
+          readOnly={isAccept}
+          multiline
+          numberOfLines={3}
+          onChangeText={isAccept ? undefined : setMessage}
+        />
+      </ModalSection>
+
+      <GlobalButton
+        text={isExpired ? "Expired" : buttonText}
+        onPress={() => onPress(data.id)}
+        disabled={isExpired}
+      />
+    </BottomSheetModal>
   );
 };
 
@@ -111,7 +123,7 @@ const styles = StyleSheet.create({
   top: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 15,
+    gap: 10,
   },
   flexBox: {
     flexDirection: "row",
@@ -119,6 +131,19 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   grayText: {
+    color: colors.text.gray,
+  },
+  header: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  title: {
+    color: colors.text.black,
+    fontSize: 18,
+    paddingVertical: 10,
+  },
+  description: {
     color: colors.text.gray,
   },
 });
