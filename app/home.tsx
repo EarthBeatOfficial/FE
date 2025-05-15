@@ -168,27 +168,29 @@ export default function HomeScreen() {
         },
       });
     } else {
-      setIsLoading(true);
-      try {
-        const resp = await recommendRoute({
-          userId: userData?.userId,
-          location: trailData?.location,
-          themeId: trailData?.themeId,
-          distance: trailData?.distance,
-        });
-        // Store trailData in redux to use it in a modal in map.tsx
-        dispatch(setRecommendedRoute(resp));
-      } catch (error: any) {
-        console.log("Error generating a route recommendation", error);
-      } finally {
-        setIsLoading(false);
-        router.push({
-          pathname: "/map",
-          params: {
-            distance: trailData?.distance,
+      if (trailData.location !== "") {
+        setIsLoading(true);
+        try {
+          const resp = await recommendRoute({
+            userId: userData?.userId,
+            location: trailData?.location,
             themeId: trailData?.themeId,
-          },
-        });
+            distance: trailData?.distance,
+          });
+          // Store trailData in redux to use it in a modal in map.tsx
+          dispatch(setRecommendedRoute(resp));
+        } catch (error: any) {
+          console.log("Error generating a route recommendation", error);
+        } finally {
+          setIsLoading(false);
+          router.push({
+            pathname: "/map",
+            params: {
+              distance: trailData?.distance,
+              themeId: trailData?.themeId,
+            },
+          });
+        }
       }
     }
 
@@ -219,16 +221,21 @@ export default function HomeScreen() {
         console.log("Permission to access location was denied");
         return;
       }
-      let location = await Location.getCurrentPositionAsync({});
-      if (location) {
-        const { latitude, longitude } = location.coords;
-        setTrailData({
-          ...trailData,
-          location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
         });
-        setIsLoading(false);
-      } else {
-        setIsLoading(true);
+        if (location) {
+          const { latitude, longitude } = location.coords;
+          setTrailData({
+            ...trailData,
+            location: `{\"latitude\": ${latitude}, \"longitude\": ${longitude}}`,
+          });
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error getting current location:", error);
+        // setIsLoading(true);
       }
     }
 
@@ -282,7 +289,7 @@ export default function HomeScreen() {
           setNumResponds(numWalkLogs);
           const walkLogs = await getWalkLogs(userData?.userId);
           if (walkLogs?.length > 0) {
-            const todaysLogs = walkLogs.find(
+            const todaysLogs = walkLogs.filter(
               (log: any) =>
                 log.walkedAt.slice(0, 10) === todaysDate.slice(0, 10)
             );
@@ -441,7 +448,11 @@ export default function HomeScreen() {
           <GlobalButton
             text={getButtonText()}
             onPress={() => generateWalkTrail()}
-            disabled={!isDistanceSelected || !trailData?.themeId}
+            disabled={
+              !isDistanceSelected ||
+              !trailData?.themeId ||
+              trailData.location === ""
+            }
           />
           {walkLogs?.length !== 0 && (
             <>
@@ -457,58 +468,57 @@ export default function HomeScreen() {
                 </ThemedText>
               </View>
               <ScrollView style={styles.listContainer}>
-                {walkLogs?.length !== 0 &&
-                  walkLogs?.map((log: WalkLog) => {
-                    const { id, name } = log.theme;
-                    return (
-                      <>
-                        <View style={{ paddingBottom: 15 }}>
-                          <View style={styles.listItems}>
-                            <ThemeIcon themeId={id} />
-                            <ThemedText>
-                              {name} - {log.distance}km
-                            </ThemedText>
-                          </View>
-                          {log.respondedSignals?.length > 0 &&
-                            log.respondedSignals.map((item, key) => {
-                              const { title, description } = item;
-                              const category = signalTypes.find(
-                                (sig) => sig.id === item.categoryId
-                              );
-                              return (
-                                <View style={{ marginLeft: 50 }}>
-                                  <View style={styles.listItems}>
-                                    <SignalIcon
-                                      key={key}
-                                      signal={category}
-                                      size={25}
-                                      imgSize={18}
-                                    />
-                                    <ThemedText
-                                      style={{
-                                        color: colors.darkGray.main,
-                                        fontSize: 12,
-                                      }}
-                                    >
-                                      {title}
-                                    </ThemedText>
-                                  </View>
+                {walkLogs?.map((log: WalkLog) => {
+                  const { id, name } = log.theme;
+                  return (
+                    <>
+                      <View style={{ paddingBottom: 15 }}>
+                        <View style={styles.listItems}>
+                          <ThemeIcon themeId={id} />
+                          <ThemedText>
+                            {name} - {log.distance}km
+                          </ThemedText>
+                        </View>
+                        {log.respondedSignals?.length > 0 &&
+                          log.respondedSignals.map((item, key) => {
+                            const { title, description } = item;
+                            const category = signalTypes.find(
+                              (sig) => sig.id === item.categoryId
+                            );
+                            return (
+                              <View style={{ marginLeft: 50 }}>
+                                <View style={styles.listItems}>
+                                  <SignalIcon
+                                    key={key}
+                                    signal={category}
+                                    size={25}
+                                    imgSize={18}
+                                  />
                                   <ThemedText
                                     style={{
-                                      color: colors.text.gray,
-                                      fontSize: 10,
-                                      marginLeft: 35,
+                                      color: colors.darkGray.main,
+                                      fontSize: 12,
                                     }}
                                   >
-                                    {description}
+                                    {title}
                                   </ThemedText>
                                 </View>
-                              );
-                            })}
-                        </View>
-                      </>
-                    );
-                  })}
+                                <ThemedText
+                                  style={{
+                                    color: colors.text.gray,
+                                    fontSize: 10,
+                                    marginLeft: 35,
+                                  }}
+                                >
+                                  {description}
+                                </ThemedText>
+                              </View>
+                            );
+                          })}
+                      </View>
+                    </>
+                  );
+                })}
               </ScrollView>
             </>
           )}

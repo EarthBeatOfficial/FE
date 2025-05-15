@@ -5,19 +5,16 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { setWalkStatus } from "../redux/slices/walkSlice";
-import { RootState } from "../redux/store";
 
 // images / icons
 import ArrowIcon from "@/assets/icons/black-arrow.png";
 
 // constants
 import { colors } from "../constants/colors";
-import { Session } from "../constants/interfaces";
 
 // modals
 import SignalMapModal from "@/components/modals/SignalMapModal";
@@ -27,8 +24,23 @@ import RouteModal from "../components/modals/RouteModal";
 
 // API
 import { sendResponse } from "@/api/responsesApi";
-import { acceptSignal, cancelSignal, deleteSignal, getAllSignals, getMySignals } from "../api/signalApi";
-import { endWalkSession } from "../api/walkSessionApi";
+import {
+  acceptSignal,
+  cancelSignal,
+  deleteSignal,
+  getAllSignals,
+  getMySignals,
+} from "../api/signalApi";
+import { endWalkSession, startWalkSession } from "../api/walkSessionApi";
+
+// redux
+import { useDispatch, useSelector } from "react-redux";
+import {
+  clearActiveSession,
+  setActiveSession,
+} from "../redux/slices/sessionSlice";
+import { setWalkStatus } from "../redux/slices/walkSlice";
+import { RootState } from "../redux/store";
 
 /**
  * <TODO>
@@ -90,7 +102,7 @@ export default function MapScreen() {
   const [signalMapModalVisible, setSignalMapModalVisible] = useState(false);
   const [selectedInProgressSignal, setSelectedInProgressSignal] =
     useState<Signal | null>(null);
-  const [activeSession, setActiveSession] = useState<Session | null>(null); // 활성화된 산책 세션
+  // const [activeSession, setActiveSession] = useState<Session | null>(null); // 활성화된 산책 세션
   const [sessionId, setSessionId] = useState<number | null>(null); // 세션 ID
   const [routeDetails, setRouteDetails] = useState<{
     distance: string | null;
@@ -134,6 +146,10 @@ export default function MapScreen() {
     (state: RootState) => state.route?.recommendedRoute
   );
 
+  const activeSession = useSelector(
+    (state: RootState) => state.session.activeSession
+  );
+
   // call the current walk status through redux
   const walkStatus = useSelector((state: RootState) => state.walk.status);
 
@@ -141,30 +157,30 @@ export default function MapScreen() {
     googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string,
   });
 
+  const now = new Date();
+
   // 현재 위치 추적
   useEffect(() => {
-    if (!isLoaded || !navigator.geolocation) return;
-
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setCurrentPosition({ lat: latitude, lng: longitude });
-        setMapCenter({ lat: latitude, lng: longitude });
-      },
-      (err) => {
-        console.warn("위치 정보를 가져올 수 없습니다.", err);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000, // 5초
+    async function getCurrentLocation() {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted" || !isLoaded) {
+        console.log("Permission to access location was denied");
+        return;
       }
-    );
-
-    // cleanup 함수 반환
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-    };
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        if (location) {
+          const { latitude, longitude } = location.coords;
+          setCurrentPosition({ lat: latitude, lng: longitude });
+          setMapCenter({ lat: latitude, lng: longitude });
+        }
+      } catch (error) {
+        console.error("Error getting current location:", error);
+      }
+    }
+    getCurrentLocation();
   }, [isLoaded]);
 
   // PENDING 시그널 데이터 가져오기
@@ -215,6 +231,10 @@ export default function MapScreen() {
     };
     if (walkStatus === "IN_PROGRESS") {
       setRouteModalVisible(false);
+    }
+    console.log(activeSession);
+    if (activeSession) {
+      setIsWalking(true);
     }
 
     fetchUserDataAndSession();
@@ -358,39 +378,22 @@ export default function MapScreen() {
 
   // RouteModal의 Take Route 버튼 핸들러 - routeId BE에서 받아온 이후 사용
   const handleTakeRoute = async () => {
-    // if (!userData?.userId || !recommendedRoute?.routeId) return;
-    // try {
-    //   const session = await startWalkSession({
-    //     userId: userData.userId,
-    //     routeId: recommendedRoute.routeId,
-    //   });
-    //   setActiveSession(session);
-    //   setSessionId(session.id);
-    //   setRouteModalVisible(false);
-    // // Store session in redux (NO GET request needed for active walk sessions)
-    // } catch (error) {
-    //   console.error("산책 시작에 실패했습니다:", error);
-    // }
-    const TEST_DATA: Session = {
-      id: 1,
-      userId: 1,
-      routeId: 2,
-      startedAt: "2024-03-20T10:00:00Z",
-      finishedAt: null,
-      status: "IN_PROGRESS",
-      route: {
-        id: 2,
-        userId: 1,
-        distance: 1.5,
-        themeId: 1,
-        createdAt: "2024-03-20T10:00:00Z",
-        completedAt: null,
-      },
-    };
-    setActiveSession(TEST_DATA);
-    setRouteModalVisible(false);
-    setIsWalking(true);
-    setShowConfirmModal(true);
+    if (!userData?.userId || !recommendedRoute?.id) return;
+    try {
+      const session = await startWalkSession({
+        userId: userData.userId,
+        routeId: recommendedRoute.id,
+      });
+      dispatch(setActiveSession(session));
+      // setActiveSession(session);
+      setSessionId(session.id);
+      setRouteModalVisible(false);
+      setIsWalking(true);
+      setShowConfirmModal(true);
+      // Store session in redux (NO GET request needed for active walk sessions)
+    } catch (error) {
+      console.error("산책 시작에 실패했습니다:", error);
+    }
   };
 
   // 경로 좌표 배열 생성 함수
@@ -449,11 +452,12 @@ export default function MapScreen() {
   };
 
   const handleFinishWalk = async () => {
-    if (!sessionId || !userData?.userId) return;
+    if (!activeSession?.id || !userData?.userId) return;
     try {
-      await endWalkSession(sessionId, { userId: userData.userId });
+      await endWalkSession(activeSession.id, { userId: userData.userId });
+      dispatch(clearActiveSession());
       setIsWalking(false);
-      setActiveSession(null);
+      // setActiveSession(null);
       setSessionId(null);
       // 홈으로 이동
       router.replace("/home");
@@ -537,30 +541,34 @@ export default function MapScreen() {
           )}
 
           {/* PENDING 시그널 마커 */}
-          {signalList.map((signal) => (
-            <Marker
-              key={`pending-${signal.id}`}
-              position={{ lat: signal.lat, lng: signal.lng }}
-              onClick={() => handlePendingMarkerClick(signal)}
-              icon={{
-                url: getIcon(signal.categoryId),
-                scaledSize: new window.google.maps.Size(80, 80),
-              }}
-            />
-          ))}
+          {signalList
+            .filter(signal => new Date(signal.expiresAt) > now)
+            .map((signal) => (
+              <Marker
+                key={`pending-${signal.id}`}
+                position={{ lat: signal.lat, lng: signal.lng }}
+                onClick={() => handlePendingMarkerClick(signal)}
+                icon={{
+                  url: getIcon(signal.categoryId),
+                  scaledSize: new window.google.maps.Size(80, 80),
+                }}
+              />
+            ))}
 
           {/* IN_PROGRESS 시그널 마커 */}
-          {myProgressSignals.map((signal) => (
-            <Marker
-              key={`my-${signal.id}`}
-              position={{ lat: signal.lat, lng: signal.lng }}
-              onClick={() => handleInProgressMarkerClick(signal)}
-              icon={{
-                url: getIcon(signal.categoryId),
-                scaledSize: new window.google.maps.Size(120, 120),
-              }}
-            />
-          ))}
+          {myProgressSignals
+            .filter(signal => new Date(signal.expiresAt) > now)
+            .map((signal) => (
+              <Marker
+                key={`my-${signal.id}`}
+                position={{ lat: signal.lat, lng: signal.lng }}
+                onClick={() => handleInProgressMarkerClick(signal)}
+                icon={{
+                  url: getIcon(signal.categoryId),
+                  scaledSize: new window.google.maps.Size(120, 120),
+                }}
+              />
+            ))}
 
           {/* Polyline으로 경로 표시 */}
           {recommendedRoute && (
