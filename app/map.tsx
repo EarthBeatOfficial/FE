@@ -44,6 +44,8 @@ import { RootState } from "../redux/store";
 
 /**
  * <TODO>
+ * 시간이 만료된 signal marker 없애야 됨
+ * signal이 responses되었다 알림 보내는 부분에서 에러 발생
  * 추천 루트와 modal이 함께 뜨지 않는 문제 (새로고침 시 루트 사라지고 modal이 뜸)
  * accept한 signal 마커가 바로 지도에 나타나지 않는 문제
  * 
@@ -154,6 +156,8 @@ export default function MapScreen() {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY as string,
   });
+
+  const now = new Date();
 
   // 현재 위치 추적
   useEffect(() => {
@@ -537,30 +541,34 @@ export default function MapScreen() {
           )}
 
           {/* PENDING 시그널 마커 */}
-          {signalList.map((signal) => (
-            <Marker
-              key={`pending-${signal.id}`}
-              position={{ lat: signal.lat, lng: signal.lng }}
-              onClick={() => handlePendingMarkerClick(signal)}
-              icon={{
-                url: getIcon(signal.categoryId),
-                scaledSize: new window.google.maps.Size(80, 80),
-              }}
-            />
-          ))}
+          {signalList
+            .filter(signal => new Date(signal.expiresAt) > now)
+            .map((signal) => (
+              <Marker
+                key={`pending-${signal.id}`}
+                position={{ lat: signal.lat, lng: signal.lng }}
+                onClick={() => handlePendingMarkerClick(signal)}
+                icon={{
+                  url: getIcon(signal.categoryId),
+                  scaledSize: new window.google.maps.Size(80, 80),
+                }}
+              />
+            ))}
 
           {/* IN_PROGRESS 시그널 마커 */}
-          {myProgressSignals.map((signal) => (
-            <Marker
-              key={`my-${signal.id}`}
-              position={{ lat: signal.lat, lng: signal.lng }}
-              onClick={() => handleInProgressMarkerClick(signal)}
-              icon={{
-                url: getIcon(signal.categoryId),
-                scaledSize: new window.google.maps.Size(120, 120),
-              }}
-            />
-          ))}
+          {myProgressSignals
+            .filter(signal => new Date(signal.expiresAt) > now)
+            .map((signal) => (
+              <Marker
+                key={`my-${signal.id}`}
+                position={{ lat: signal.lat, lng: signal.lng }}
+                onClick={() => handleInProgressMarkerClick(signal)}
+                icon={{
+                  url: getIcon(signal.categoryId),
+                  scaledSize: new window.google.maps.Size(120, 120),
+                }}
+              />
+            ))}
 
           {/* Polyline으로 경로 표시 */}
           {recommendedRoute && (
