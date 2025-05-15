@@ -49,3 +49,35 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Member
+- Jaemin Kim: Lead, Backend
+- Cindy Park: Frontend
+- Gahee kim: Frontend
+- Ayeon Cho: AI
+
+## Team Notion Link
+
+## Goals
+-Sustainability, Health 
+
+## About our solution 
+
+
+## APP Demo
+
+## About Implementation
+1. Tech Stack
+- Node.js
+- Nest.js - a node.js based framework
+- Prisma - ORM
+- PostgreSQL
+- Supabase - a cloud database
+- Docker
+- Google Cloud Platform (GCP)
+- Gemini
+
+2. Architecture
+
+
+4. ERD
