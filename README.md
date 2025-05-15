@@ -59,7 +59,7 @@ Join our community of developers creating universal apps.
 ## Team Notion Link
 
 ## Goals
--Sustainablity, Health 
+-Sustainability, Health 
 
 ## About our solution 
 
