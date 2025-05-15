@@ -31,11 +31,10 @@ export default function NicknameScreen() {
       setErrorMessage("Nickname must not exceed 10 characters.");
       return;
     }
-
-    setIsLoading(true);
     setErrorState(false);
 
     try {
+      setIsLoading(true);
       const response = await createUser({ username: nickname });
       // Store user data in AsyncStorage
       await AsyncStorage.setItem(
@@ -46,17 +45,21 @@ export default function NicknameScreen() {
         })
       );
       // Navigate to home screen
+      router.push("/home");
     } catch (error: any) {
+      setErrorState(true);
       if (error.response?.status === 409) {
         // Handle duplicate nickname error
         setErrorState(true);
+        setErrorMessage("This nickname already exists.");
       } else {
         // Handle other errors
         console.error("Error creating user:", error);
+        setErrorState(true);
+        setErrorMessage("An error occurred. Please try again.");
       }
     } finally {
       setIsLoading(false);
-      router.push("/home");
     }
   };
 
@@ -114,7 +117,7 @@ export default function NicknameScreen() {
                   fontSize: 14,
                 }}
               >
-                {errorMessage ? errorMessage : " This nickname already exists."}
+                {errorMessage}
                 {"\n"}
                 Please enter a unique nickname
               </ThemedText>
