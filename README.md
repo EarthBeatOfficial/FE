@@ -40,6 +40,6 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 - React Native – client side
 
 2. Architecture
+![image](https://github.com/user-attachments/assets/81b57089-c2e6-4f0e-8f69-4638f8187164)
 
-
-4. ERD
+3. ERD
