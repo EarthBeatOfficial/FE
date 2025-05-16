@@ -44,4 +44,8 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 
 
 3. ERD
-![image](https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9)
+https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9
+
+## Demo video link (3 minutes) -> https://youtu.be/6M-q3ud_vkE 
+![image](https://github.com/user-attachments/assets/5d3aa1a5-a4f6-4ad5-aa1e-203c10c3434d)
+
