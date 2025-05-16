@@ -27,17 +27,17 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 
 ## About Implementation
 1. Tech Stack
--Gemini 2.0 to suggest walk trails
-Gemma 3 27B for development support
-FastAPI for the A.I. Server
-Node.js
-Nest.js - a node.js based framework for the Backend
-Prisma – ORM for easier DB access
-PostgreSQL 
-Supabase - a cloud database 
-Docker – for containers and deployment
-Google Cloud Platform (GCP) 
-React Native – client side
+- Gemini 2.0 to suggest walk trails
+- Gemma 3 27B for development support
+- FastAPI for the A.I. Server
+- Node.js
+- Nest.js - a node.js based framework for the Backend
+- Prisma – ORM for easier DB access
+- PostgreSQL 
+- Supabase - a cloud database 
+- Docker – for containers and deployment
+- Google Cloud Platform (GCP) 
+- React Native – client side
 
 2. Architecture
 
