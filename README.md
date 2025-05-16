@@ -15,6 +15,7 @@ We aim to help the world become a better place by providing a platform for the c
 (Themes : Sustainability & Health)
 
 Problem: Social isolation & sedentary lifestyle
+
 Solution: Turn everyday walks into meaningful social action (respond to signals)💡
 
 Result: A simple walk becomes a way to improve your health, reduce loneliness, and build a caring community.
