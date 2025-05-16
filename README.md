@@ -12,10 +12,14 @@ We aim to help the world become a better place by providing a platform for the c
 
 ## Team Notion Link
 
-## Goals
--Sustainability, Health 
 
-## About our solution 
+## 🌍 Our Solution — Earth Beat
+(Themes : Sustainability & Health)
+
+Problem: Social isolation & sedentary lifestyle
+Solution: Turn everyday walks into meaningful social action (respond to signals)💡
+Result:A simple walk becomes a way to improve your health, reduce loneliness, and build a caring community.
+![image](https://github.com/user-attachments/assets/f4843689-37a6-45c8-87ba-3a9449829d45)
 
 
 ## APP Demo
