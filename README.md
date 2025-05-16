@@ -46,6 +46,6 @@ https://youtu.be/6M-q3ud_vkE
 
 
 3. ERD
-![image]https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9
+![image](https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9)
 
 
