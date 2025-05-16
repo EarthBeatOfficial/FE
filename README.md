@@ -24,7 +24,7 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 ## APP Demo
 ![image](https://github.com/user-attachments/assets/598d7d0e-630b-4801-91fb-2454c471fe78)
 
-## Demo video link (3 minutes) 
+## Demo video link 
 https://youtu.be/6M-q3ud_vkE 
 
 ## About Implementation
@@ -46,6 +46,6 @@ https://youtu.be/6M-q3ud_vkE
 
 
 3. ERD
-https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9
+![image]https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9
 
 
