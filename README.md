@@ -25,7 +25,7 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 ![image](https://github.com/user-attachments/assets/598d7d0e-630b-4801-91fb-2454c471fe78)
 
 ## Demo video link 
-https://youtu.be/6M-q3ud_vkE 
+[![IMAGE ALT TEXT HERE](https://img.youtu.be/6M-q3ud_vkE/YOUTUBE)
 
 ## About Implementation
 1. Tech Stack
