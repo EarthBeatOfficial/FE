@@ -10,8 +10,6 @@ We aim to help the world become a better place by providing a platform for the c
 - Gahee kim: Frontend
 - Ayeon Cho: AI
 
-## Team Notion Link
-
 
 ## 🌍 Our Solution — Earth Beat
 (Themes : Sustainability & Health)
@@ -24,6 +22,7 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 
 
 ## APP Demo
+![image](https://github.com/user-attachments/assets/c716a61d-d3a7-480e-a08f-3c366137f182)
 
 ## About Implementation
 1. Tech Stack
@@ -44,3 +43,4 @@ Result: A simple walk becomes a way to improve your health, reduce loneliness, a
 
 
 3. ERD
+![image](https://github.com/user-attachments/assets/7314a232-6b3c-420a-a12d-d155a8647da9)
